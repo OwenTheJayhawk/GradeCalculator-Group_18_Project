@@ -4,7 +4,7 @@ from category import Category
 from class_profile import ClassProfile
 
 
-eecs_348 = ClassProfile(name="EECS 348 - Software Engineering")
+eecs_348 = ClassProfile(name="EECS 561 - Software Engineering 2")
 
 
 try:
