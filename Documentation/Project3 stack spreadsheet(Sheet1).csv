@@ -1,0 +1,30 @@
+Requirment ID,1,2,3,4,5,6,7,8,9,10
+Description ,"Core Functionality: User can input class name, assignment names, points earned, and total points possible.","Weighted Grades: User can assign a percentage weight to categories (e.g., 'Homework' 40%, 'Exams' 60%).",Basic Calculation: Display the current letter grade and percentage for the class based on entered data.,Data Persistence: User can save their entered grades and class data so it loads on the next use.,"""What If"" Calculation: User can enter a hypothetical score for a future assignment to see its impact on their final grade.","Modern GUI: Develop a clean, responsive graphical user interface using a modern framework (e.g., React, Vue, or a mobile framework).",Input Validation: Implement robust input checks to prevent non-numeric values for grades/weights.,"Error Handling: Gracefully handle errors like division by zero (e.g., no assignments entered) or weight total not equaling 100%.v","Cloud Storage: Implement user authentication and store grade data in a cloud database (e.g., Firebase, AWS RDS).","Security: Implement provisions for data security, such as encryption for saved data or secure communication (HTTPS)."
+Story Points,5,8,5,5,8,13,8,3,13,13
+Priority ,1,2,3,4,5,6,7,8,9,10
+Sprint No.,Sprint 1,Sprint 1 ,Sprint 1 ,Sprint 2 ,Sprint 2 ,Sprint 2/3,Sprint 1 ,Sprint 1,Sprint 3 ,Final Sprint 
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+Story #,Pool,Story Source,Story Summary ,,,,,,,
+2,,,,,,,,,,
+3,,,,,,,,,,
+1,5, EECS 461 ,Created an Http sever in javascript ,,,,,,,
+2,1,Personal Project ,Created a GUI using Pyslide6 in python ,,,,,,,
+3,13,Personal Project ,Created a neon database to qureery GET request from the user ,,,,,,,
+4,5,Personal Project ,Made a Frontend UI for a moblie app using react native frame work ,,,,,,,
+5,1,EECS 330,Design a Stack and queue in C++ with out ADT types ,,,,,,,
+6,3,EECS 581,Creating the main minesweeper function in Project 1,,,,,,,
+7,13,EECS 330,Designed a graph data stucture ,,,,,,,
+8,1,EECS 168 ,Created a Basic class program in python,,,,,,,
+9,3,EECS 348,Made a website with basic HTML and Javascript ,,,,,,,
+10,5,Personal Project ,Used pygame to configure audio for a mp3 app ,,,,,,,
+11,13,EECS 388,Read I/O ports from a lidar sensor ,,,,,,,
+12,1,Personal Project ,Made a .env file and hid the file in the github for security ,,,,,,,
+13,1,EECS 268,Made a linklist in python,,,,,,,
+14,3,EECS 510,Created a computer language in python ,,,,,,,
+15,13,Personal Project ,Created a Aim script controling the mouse in the background of a game ,,,,,,,
+16,8,Personal Project ,Connected a Barcode database API pased data through phone camera to find the food iteam ,,,,,,,
+17,5,EECS 581,Made a AI program that helps user play the game ,,,,,,,
+18,5,Personal Project ,Made a SQLlite data base to store mp3 file in to a playlist ,,,,,,,
