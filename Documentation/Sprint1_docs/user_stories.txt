@@ -1,0 +1,8 @@
+An end user can use the class feature to add their academic classes which will contain their assignments and respective grades
+
+An end user can use the categories feature which is a marked that is to be associated with assignments that contain a weight that will be applied to any assignments placed in the associated category
+
+An end user can use the assignments feature to add their assignments to a created class. Assignments will have an associated grade and weight that will be used to calculate final grades
+
+An end user will use the completed application to perform calculations associated with the grades they have in their classes in order to gain information about their academic situation in a class.
+
