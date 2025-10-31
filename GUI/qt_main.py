@@ -28,14 +28,7 @@ from class_profile import ClassProfile
 
 
 class GradeCalculatorWindow(QMainWindow):
-    """A small, focused GUI to interact with the existing grade classes.
-
-    Features:
-    - Create a ClassProfile (course)
-    - Add Categories with weights
-    - Select a category and add Assignments
-    - View assignments in the selected category and the current grade
-    """
+    
 
     def __init__(self):
         super().__init__()
