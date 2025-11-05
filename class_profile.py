@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+from assignment import Assignment 
 
 class ClassProfile:
     ##Represents a single course the student is taking.
@@ -8,15 +7,71 @@ class ClassProfile:
         self.name = name
         self.categories = {} # Dictionary: {category_name: Category_object}
 
-        # Grade thresholds in percent (default)
-        # Keys: 'A','B','C','D','F' -> minimum percentage required for that letter
-        self.grade_thresholds = {
-            "A": 90.0,
-            "B": 80.0,
-            "C": 70.0,
-            "D": 60.0,
-            "F": 0.0
+    def to_dict(self) -> dict:
+        #Converts the ClassProfile object to a dictionary for saving.
+        return {
+            "name": self.name,
+            "categories": [c.to_dict() for c in self.categories.values()]
         }
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        #Creates a ClassProfile object from a dictionary, recreating all categories.
+        class_profile = cls(name=data["name"])
+        # NOTE: Category class must be imported here
+        from category import Category
+        for c_data in data["categories"]:
+            class_profile.add_category(Category.from_dict(c_data))
+        return class_profile
+    
+    def calculate_what_if_grade(self, category_name: str, new_earned: float, new_possible: float) -> float:
+        
+        #Calculates the projected grade if a hypothetical score is added 
+        #to a specific category (Requirement 5 from the stack).
+        
+        if category_name not in self.categories:
+            raise ValueError(f"Category '{category_name}' not found.")
+
+        # --- Setup the temporary hypothetical assignment list ---
+        target_category = self.categories[category_name]
+        
+        # Create a list of assignments including the hypothetical one
+        temp_assignments_list = target_category.assignments + [
+           
+            
+            Assignment("Hypothetical", new_earned, new_possible)
+        ]
+        
+        total_contribution = 0.0
+        total_weight_used = 0.0
+
+        for name, category in self.categories.items():
+            current_category_weight = category.weight
+            
+            if name == category_name:
+                # Calculate category score using the hypothetical data
+                cat_earned = sum(a.points_earned for a in temp_assignments_list)
+                cat_possible = sum(a.points_possible for a in temp_assignments_list)
+                
+                cat_percentage = (cat_earned / cat_possible) * 100 if cat_possible > 0 else 0.0
+                
+                total_contribution += (cat_percentage / 100.0) * current_category_weight
+                total_weight_used += current_category_weight
+            
+            else:
+                # Use the original (completed) category scores for all other categories
+                contribution = category.get_weighted_contribution()
+                total_contribution += contribution
+                
+                # Only include the category's weight if it has assignments (as per Sprint 1 logic)
+                if category.assignments:
+                    total_weight_used += current_category_weight
+
+        # Final grade normalization
+        if total_weight_used == 0:
+            return 0.0
+        
+        return round((total_contribution / total_weight_used) * 100, 2)
 
     def add_category(self, category: Category):
         #Adds a grading category to the class profile.
@@ -47,42 +102,3 @@ class ClassProfile:
     def get_total_declared_weight(self) -> float:
         #Checks the sum of all category weights. 
         return sum(c.weight for c in self.categories.values()) * 100
-
-    def set_grade_thresholds(self, thresholds: dict):
-        """
-        Replace grade thresholds. Expected keys: 'A','B','C','D','F' with numeric percentages 0-100.
-        Validation ensures sensible ordering (A > B > C > D >= F) and values in range.
-        """
-        required_keys = {"A", "B", "C", "D", "F"}
-        if set(thresholds.keys()) != required_keys:
-            raise ValueError(f"Thresholds must include exactly these keys: {sorted(required_keys)}")
-
-        # Convert values to float and validate range
-        thr = {k: float(v) for k, v in thresholds.items()}
-        for k, v in thr.items():
-            if not (0.0 <= v <= 100.0):
-                raise ValueError(f"Threshold for '{k}' must be between 0 and 100.")
-
-        # Ensure descending order: A > B > C > D >= F and F == min (commonly 0)
-        if not (thr["A"] > thr["B"] > thr["C"] > thr["D"] >= thr["F"]):
-            raise ValueError("Thresholds must satisfy A > B > C > D >= F (and values within 0-100).")
-
-        self.grade_thresholds = thr
-
-    def get_grade_thresholds(self) -> dict:
-        """Return a copy of current grade thresholds (percentages)."""
-        return dict(self.grade_thresholds)
-
-    def get_letter_grade(self, percentage: float | None = None) -> str:
-        """
-        Return the letter grade corresponding to the given percentage.
-        If percentage is None, uses the class's current calculated percentage.
-        """
-        if percentage is None:
-            percentage = self.calculate_current_grade()
-
-        # Ensure checking from highest to lowest
-        for letter in ["A", "B", "C", "D", "F"]:
-            if percentage >= self.grade_thresholds[letter]:
-                return letter
-        return "F"
