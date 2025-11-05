@@ -3,16 +3,31 @@ class Assignment:
     def __init__(self, name: str, earned: float, possible: float):
         # Requirement: Core Functionality (Input assignment names, points earned, and total points possible)
         self.name = name
-        # validate/set possible first so earned validation can reference it
-        self.points_possible = self._validate_score(possible, is_possible=True)
         self.points_earned = self._validate_score(earned)
+        self.points_possible = self._validate_score(possible, is_possible=True)
+
+    def to_dict(self) -> dict:
+        #Converts the Assignment object to a dictionary for JSON serialization.
+        return {
+            "name": self.name,
+            "earned": self.points_earned,
+            "possible": self.points_possible
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict):
+        #Creates an Assignment object from a dictionary.
+        return cls(
+            name=data["name"],
+            earned=data["earned"],
+            possible=data["possible"]
+        )
 
     def _validate_score(self, score: float, is_possible: bool = False) -> float:
-        #Helper to ensure scores are non-negative.
+        #Helper to ensure scores are non-negative. 
         if score < 0:
             raise ValueError(f"Score for '{self.name}' cannot be negative.")
-        # Only compare against points_possible if it has already been set
-        if not is_possible and hasattr(self, "points_possible") and score > self.points_possible:
+        if not is_possible and score > self.points_possible:
              print(f"Warning: Earned points ({score}) exceed possible points ({self.points_possible}) for {self.name}.")
         return score
 
