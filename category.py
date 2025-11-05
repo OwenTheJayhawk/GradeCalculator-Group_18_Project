@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class Category:
     #Represents a weighted grading category (e.g., Homework).
     def __init__(self, name: str, weight: float):
@@ -5,26 +8,6 @@ class Category:
         self.name = name
         self.weight = self._validate_weight(weight)
         self.assignments = [] # Holds a list of Assignment objects
-
-    def to_dict(self) -> dict:
-        #Converts the Category object to a dictionary for JSON serialization.
-        return {
-            "name": self.name,
-            "weight": self.weight * 100, # Store as percentage for readability
-            "assignments": [a.to_dict() for a in self.assignments]
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        #Creates a Category object from a dictionary, recreating assignments.
-        # Use the stored percentage for weight to initialize
-        category = cls(name=data["name"], weight=data["weight"]) 
-        # Recreate nested Assignment objects
-        for a_data in data["assignments"]:
-            # NOTE: Assignment class must be imported here
-            from assignment import Assignment 
-            category.add_assignment(Assignment.from_dict(a_data))
-        return category
 
     def _validate_weight(self, weight: float) -> float:
         #Helper to ensure weights are valid percentages. Part of Requirement 5.
