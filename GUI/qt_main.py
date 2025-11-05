@@ -11,7 +11,7 @@ try:
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
         QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget,
         QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox,
-        QDoubleSpinBox, QScrollArea
+        QDoubleSpinBox
     )
     from PyQt5.QtCore import Qt
 except Exception as e:
@@ -96,38 +96,6 @@ class GradeCalculatorWindow(QMainWindow):
 
         assign_layout.addLayout(aform)
 
-        # Grade thresholds controls
-        thr_box = QGroupBox("Grade Thresholds")
-        thr_form = QFormLayout()
-        self.thr_A = QDoubleSpinBox()
-        self.thr_A.setRange(0.0, 100.0)
-        self.thr_A.setSuffix(" %")
-        self.thr_B = QDoubleSpinBox()
-        self.thr_B.setRange(0.0, 100.0)
-        self.thr_B.setSuffix(" %")
-        self.thr_C = QDoubleSpinBox()
-        self.thr_C.setRange(0.0, 100.0)
-        self.thr_C.setSuffix(" %")
-        self.thr_D = QDoubleSpinBox()
-        self.thr_D.setRange(0.0, 100.0)
-        self.thr_D.setSuffix(" %")
-        self.thr_F = QDoubleSpinBox()
-        self.thr_F.setRange(0.0, 100.0)
-        self.thr_F.setSuffix(" %")
-        self.apply_thr_btn = QPushButton("Apply Thresholds")
-        self.apply_thr_btn.clicked.connect(self.apply_thresholds)
-        self.reset_thr_btn = QPushButton("Reset to Defaults")
-        self.reset_thr_btn.clicked.connect(self.reset_thresholds)
-
-        thr_form.addRow("A:", self.thr_A)
-        thr_form.addRow("B:", self.thr_B)
-        thr_form.addRow("C:", self.thr_C)
-        thr_form.addRow("D:", self.thr_D)
-        thr_form.addRow("F:", self.thr_F)
-        thr_form.addRow(self.apply_thr_btn)
-        thr_form.addRow(self.reset_thr_btn)
-        thr_box.setLayout(thr_form)
-
         # Assignment list table
         self.assign_table = QTableWidget(0, 3)
         self.assign_table.setHorizontalHeaderLabels(["Name", "Earned", "Possible"])
@@ -135,7 +103,7 @@ class GradeCalculatorWindow(QMainWindow):
 
         assign_box.setLayout(assign_layout)
 
-        # Grade display (create before adding to main layout)
+        # Grade display
         grade_layout = QHBoxLayout()
         self.grade_label = QLabel("Current grade: N/A")
         grade_layout.addStretch()
@@ -144,18 +112,10 @@ class GradeCalculatorWindow(QMainWindow):
         main_layout.addWidget(class_box)
         main_layout.addWidget(cat_box)
         main_layout.addWidget(assign_box)
-        main_layout.addWidget(thr_box)
         main_layout.addLayout(grade_layout)
 
         central.setLayout(main_layout)
-        # Wrap the central widget in a scroll area so a vertical scrollbar appears when needed
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(central)
-        self.setCentralWidget(scroll)
-
-        # initialize threshold widgets with defaults (no profile yet)
-        self.reset_thresholds()
+        self.setCentralWidget(central)
 
     def create_class(self):
         name = self.class_name_edit.text().strip()
@@ -165,8 +125,6 @@ class GradeCalculatorWindow(QMainWindow):
         self.profile = ClassProfile(name)
         self.cat_selector.clear()
         self.assign_table.setRowCount(0)
-        # populate threshold widgets from the new profile
-        self.refresh_threshold_widgets()
         self.update_grade()
         QMessageBox.information(self, "Class created", f"Created class '{name}'.")
 
@@ -239,51 +197,9 @@ class GradeCalculatorWindow(QMainWindow):
             return
         try:
             g = self.profile.calculate_current_grade()
-            letter = self.profile.get_letter_grade(g)
-            self.grade_label.setText(f"Current grade: {g} % ({letter})")
+            self.grade_label.setText(f"Current grade: {g} %")
         except Exception as e:
             self.grade_label.setText("Current grade: Error")
-
-    # Threshold helpers
-    def refresh_threshold_widgets(self):
-        """Load current profile thresholds into the widgets (or defaults if no profile)."""
-        if self.profile:
-            thr = self.profile.get_grade_thresholds()
-        else:
-            # same defaults as ClassProfile
-            thr = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
-        self.thr_A.setValue(thr["A"])
-        self.thr_B.setValue(thr["B"])
-        self.thr_C.setValue(thr["C"])
-        self.thr_D.setValue(thr["D"])
-        self.thr_F.setValue(thr["F"])
-
-    def apply_thresholds(self):
-        if not self.profile:
-            QMessageBox.warning(self, "No class", "Create a class first.")
-            return
-        thr = {
-            "A": float(self.thr_A.value()),
-            "B": float(self.thr_B.value()),
-            "C": float(self.thr_C.value()),
-            "D": float(self.thr_D.value()),
-            "F": float(self.thr_F.value()),
-        }
-        try:
-            self.profile.set_grade_thresholds(thr)
-            QMessageBox.information(self, "Thresholds updated", "Grade thresholds updated.")
-            self.update_grade()
-        except Exception as e:
-            QMessageBox.critical(self, "Invalid thresholds", str(e))
-
-    def reset_thresholds(self):
-        """Reset the spin boxes to default thresholds (does not change profile unless applied)."""
-        defaults = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
-        self.thr_A.setValue(defaults["A"])
-        self.thr_B.setValue(defaults["B"])
-        self.thr_C.setValue(defaults["C"])
-        self.thr_D.setValue(defaults["D"])
-        self.thr_F.setValue(defaults["F"])
 
 
 def run_app():
