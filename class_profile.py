@@ -4,13 +4,13 @@ from category import Category
 
 
 class ClassProfile:
-    ##Represents a single course the student is taking.
+    
     def __init__(self, name: str):
-        # Requirement: Core Functionality (Input class name)
+        
         self.name = name
         self.categories = {} # Dictionary: {category_name: Category_object}
 
-        # Grade thresholds in percent (default)
+        
         # Keys: 'A','B','C','D','F' -> minimum percentage required for that letter
         self.grade_thresholds = {
             "A": 90.0,
@@ -21,11 +21,11 @@ class ClassProfile:
         }
 
     def add_category(self, category: Category):
-        #Adds a grading category to the class profile.
+        
         self.categories[category.name] = category
 
     def calculate_current_grade(self) -> float:
-        #Calculates the final weighted percentage for the entire class.
+        
         if not self.categories:
             return 0.0
 
@@ -33,16 +33,16 @@ class ClassProfile:
         total_weight_used = 0.0
 
         for category_name, category in self.categories.items():
-            # Only count categories with assignments for weight normalization (common practice)
+            
             if category.assignments:
                 total_contribution += category.get_weighted_contribution()
                 total_weight_used += category.weight
 
-        # Normalize the grade based on weights of categories that HAVE assignments
+        
         if total_weight_used == 0:
             return 0.0 # No assignments or weights were provided
 
-        # Grade is the sum of weighted contributions divided by the total weight of *graded* categories.
+        
         final_percentage = (total_contribution / total_weight_used) * 100
         return round(final_percentage, 2)
 
@@ -59,20 +59,20 @@ class ClassProfile:
         if set(thresholds.keys()) != required_keys:
             raise ValueError(f"Thresholds must include exactly these keys: {sorted(required_keys)}")
 
-        # Convert values to float and validate range
+        
         thr = {k: float(v) for k, v in thresholds.items()}
         for k, v in thr.items():
             if not (0.0 <= v <= 100.0):
                 raise ValueError(f"Threshold for '{k}' must be between 0 and 100.")
 
-        # Ensure descending order: A > B > C > D >= F and F == min (commonly 0)
+        
         if not (thr["A"] > thr["B"] > thr["C"] > thr["D"] >= thr["F"]):
             raise ValueError("Thresholds must satisfy A > B > C > D >= F (and values within 0-100).")
 
         self.grade_thresholds = thr
 
     def get_grade_thresholds(self) -> dict:
-        """Return a copy of current grade thresholds (percentages)."""
+        
         return dict(self.grade_thresholds)
 
     def get_letter_grade(self, percentage: float | None = None) -> str:
@@ -80,18 +80,14 @@ class ClassProfile:
         if percentage is None:
             percentage = self.calculate_current_grade()
 
-        # Ensure checking from highest to lowest
+        
         for letter in ["A", "B", "C", "D", "F"]:
             if percentage >= self.grade_thresholds[letter]:
                 return letter
         return "F"
 
     def to_dict(self) -> dict:
-        """Serialize the class profile to a JSON-safe dict.
-
-        - `weight` for categories is stored as 0-100 (percent) to match UI input.
-        - thresholds are stored verbatim.
-        """
+        
         return {
             "name": self.name,
             "grade_thresholds": dict(self.grade_thresholds),
@@ -100,7 +96,7 @@ class ClassProfile:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ClassProfile":
-        """Create a ClassProfile from a dict produced by to_dict()."""
+        
         name = data.get("name", "")
         cp = cls(name)
         thr = data.get("grade_thresholds")
