@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Ensure project root is on path so we can import modules next to this GUI folder
+
 ROOT = os.path.dirname(os.path.dirname(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -15,11 +15,10 @@ try:
     )
     from PyQt5.QtCore import Qt
 except Exception as e:
-    # Fail fast with a helpful message instead of leaving Qt names undefined.
+    
     print("PyQt5 is required to run the GUI. Install it with: pip install PyQt5")
     print("Import error:", e)
-    # Exit so importing this module doesn't leave undefined symbols (which
-    # previously caused a NameError when the class definition executed).
+    
     sys.exit(1)
 
 from assignment import Assignment
@@ -171,7 +170,7 @@ class GradeCalculatorWindow(QMainWindow):
 
         assign_box.setLayout(assign_layout)
 
-        # Grade display (create before adding to main layout)
+        # Grade display 
         grade_layout = QHBoxLayout()
         self.grade_label = QLabel("Current grade: N/A")
         grade_layout.addStretch()
@@ -204,7 +203,7 @@ class GradeCalculatorWindow(QMainWindow):
         self.profile = ClassProfile(name)
         self.cat_selector.clear()
         self.assign_table.setRowCount(0)
-        # populate threshold widgets from the new profile
+        
         self.refresh_threshold_widgets()
         self.update_grade()
         QMessageBox.information(self, "Class created", f"Created class '{name}'.")
@@ -212,14 +211,13 @@ class GradeCalculatorWindow(QMainWindow):
     def load_profile(self, profile: ClassProfile):
         """Set the given ClassProfile into the UI and refresh widgets."""
         self.profile = profile
-        # populate category selector
+        
         self.cat_selector.clear()
         for name in self.profile.categories.keys():
             self.cat_selector.addItem(name)
         self.refresh_threshold_widgets()
         self.refresh_assignment_table()
         self.update_grade()
-        # ensure saved list highlights current
         try:
             idx = list_class_names().index(self.profile.name)
             self.saved_list.setCurrentRow(idx)
@@ -290,7 +288,7 @@ class GradeCalculatorWindow(QMainWindow):
 
     # Saved classes UI helpers
     def refresh_saved_list(self):
-        """Reload saved class names into the QListWidget."""
+        
         self.saved_list.clear()
         try:
             names = list_class_names()
@@ -300,7 +298,7 @@ class GradeCalculatorWindow(QMainWindow):
             pass
 
     def load_selected_saved(self):
-        """Load the class profile currently selected in the saved list."""
+        
         item = self.saved_list.currentItem()
         if not item:
             QMessageBox.warning(self, "Select class", "Please select a saved class to load.")
@@ -327,7 +325,7 @@ class GradeCalculatorWindow(QMainWindow):
                 QMessageBox.warning(self, "Not found", "Selected class was not found in storage.")
 
     def import_file(self):
-        """Import classes from an arbitrary JSON file and optionally load one."""
+        
         path, _ = QFileDialog.getOpenFileName(self, "Import classes from JSON", "", "JSON Files (*.json);;All Files (*)")
         if not path:
             return
@@ -336,7 +334,7 @@ class GradeCalculatorWindow(QMainWindow):
             if not classes:
                 QMessageBox.information(self, "No classes", "No class definitions found in that file.")
                 return
-            # upsert all imported classes into persistent store
+            
             for c in classes:
                 upsert_class(c)
             self.refresh_saved_list()
@@ -416,7 +414,7 @@ class GradeCalculatorWindow(QMainWindow):
         except Exception as e:
             self.grade_label.setText("Current grade: Error")
 
-    # Threshold helpers
+    
     def refresh_threshold_widgets(self):
         """Load current profile thresholds into the widgets (or defaults if no profile)."""
         if self.profile:
@@ -449,7 +447,7 @@ class GradeCalculatorWindow(QMainWindow):
             QMessageBox.critical(self, "Invalid thresholds", str(e))
 
     def reset_thresholds(self):
-        """Reset the spin boxes to default thresholds (does not change profile unless applied)."""
+        
         defaults = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
         self.thr_A.setValue(defaults["A"])
         self.thr_B.setValue(defaults["B"])
@@ -459,9 +457,9 @@ class GradeCalculatorWindow(QMainWindow):
 
 
 def run_app():
-    # Helpful message if PyQt5 is missing
+    
     try:
-        from PyQt5.QtWidgets import QApplication  # re-check
+        from PyQt5.QtWidgets import QApplication  
     except Exception:
         print("PyQt5 is not installed. Install it with: pip install PyQt5")
         return
@@ -474,3 +472,4 @@ def run_app():
 
 if __name__ == '__main__':
     run_app()
+
