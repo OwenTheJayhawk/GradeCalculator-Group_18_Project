@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from assignment import Assignment
+
 
 class Category:
     #Represents a weighted grading category (e.g., Homework).
@@ -40,3 +42,22 @@ class Category:
         category_score = self.get_category_score()
         # weighted_contribution = Category_Percentage * Category_Weight
         return (category_score["percentage"] / 100.0) * self.weight
+
+    def to_dict(self) -> dict:
+        """Serialize category to a plain dict. Weight is stored as percentage (0-100) to match UI."""
+        return {
+            "name": self.name,
+            "weight": float(self.weight * 100.0),
+            "assignments": [a.to_dict() for a in self.assignments],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Category":
+        """Create a Category from a dict produced by to_dict()."""
+        name = data.get("name", "")
+        weight = float(data.get("weight", 0.0))
+        cat = cls(name, weight)
+        for a in data.get("assignments", []):
+            # Assignment.from_dict will validate values
+            cat.add_assignment(Assignment.from_dict(a))
+        return cat
