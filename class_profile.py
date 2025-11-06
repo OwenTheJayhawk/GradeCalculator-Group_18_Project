@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from category import Category
+
 
 class ClassProfile:
     ##Represents a single course the student is taking.
@@ -83,3 +85,34 @@ class ClassProfile:
             if percentage >= self.grade_thresholds[letter]:
                 return letter
         return "F"
+
+    def to_dict(self) -> dict:
+        """Serialize the class profile to a JSON-safe dict.
+
+        - `weight` for categories is stored as 0-100 (percent) to match UI input.
+        - thresholds are stored verbatim.
+        """
+        return {
+            "name": self.name,
+            "grade_thresholds": dict(self.grade_thresholds),
+            "categories": [c.to_dict() for c in self.categories.values()],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ClassProfile":
+        """Create a ClassProfile from a dict produced by to_dict()."""
+        name = data.get("name", "")
+        cp = cls(name)
+        thr = data.get("grade_thresholds")
+        if isinstance(thr, dict):
+            try:
+                cp.set_grade_thresholds(thr)
+            except Exception:
+                # If thresholds are malformed, keep defaults. GUI will show defaults.
+                pass
+
+        for c in data.get("categories", []):
+            cat = Category.from_dict(c)
+            cp.add_category(cat)
+
+        return cp
