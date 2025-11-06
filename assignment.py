@@ -21,3 +21,19 @@ class Assignment:
         if self.points_possible == 0:
             return 0.0  # Avoids division by zero
         return (self.points_earned / self.points_possible) * 100
+
+    def to_dict(self) -> dict:
+        """Serialize assignment to a plain dict for JSON storage."""
+        return {
+            "name": self.name,
+            "points_earned": float(self.points_earned),
+            "points_possible": float(self.points_possible),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Assignment":
+        """Create an Assignment from a dict produced by to_dict()."""
+        name = data.get("name", "")
+        earned = float(data.get("points_earned", 0.0))
+        possible = float(data.get("points_possible", 0.0))
+        return cls(name, earned, possible)
