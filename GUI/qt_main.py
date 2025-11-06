@@ -11,7 +11,7 @@ try:
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
         QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget,
         QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox,
-        QDoubleSpinBox, QScrollArea
+        QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog
     )
     from PyQt5.QtCore import Qt
 except Exception as e:
@@ -25,6 +25,11 @@ except Exception as e:
 from assignment import Assignment
 from category import Category
 from class_profile import ClassProfile
+from data_manger import (
+    load_class_data, save_class_data,
+    upsert_class, delete_class, list_class_names,
+    import_from_file, export_class_to_file,
+)
 
 
 class GradeCalculatorWindow(QMainWindow):
@@ -53,7 +58,38 @@ class GradeCalculatorWindow(QMainWindow):
         class_layout.addWidget(QLabel("Class:"))
         class_layout.addWidget(self.class_name_edit)
         class_layout.addWidget(self.create_class_btn)
+        # Load / Save controls for persistence
+        self.load_data_btn = QPushButton("Load Data")
+        self.load_data_btn.clicked.connect(self.load_data)
+        self.save_data_btn = QPushButton("Save Current Class")
+        self.save_data_btn.clicked.connect(self.save_data)
+        class_layout.addWidget(self.load_data_btn)
+        class_layout.addWidget(self.save_data_btn)
         class_box.setLayout(class_layout)
+
+        # Saved classes list + controls
+        saved_box = QGroupBox("Saved Classes")
+        saved_layout = QVBoxLayout()
+        self.saved_list = QListWidget()
+        btn_layout = QHBoxLayout()
+        self.refresh_saved_btn = QPushButton("Refresh")
+        self.refresh_saved_btn.clicked.connect(self.refresh_saved_list)
+        self.load_selected_btn = QPushButton("Load Selected")
+        self.load_selected_btn.clicked.connect(self.load_selected_saved)
+        self.delete_selected_btn = QPushButton("Delete Selected")
+        self.delete_selected_btn.clicked.connect(self.delete_selected_saved)
+        self.import_btn = QPushButton("Import JSON...")
+        self.import_btn.clicked.connect(self.import_file)
+        self.export_btn = QPushButton("Export Selected...")
+        self.export_btn.clicked.connect(self.export_selected)
+        btn_layout.addWidget(self.refresh_saved_btn)
+        btn_layout.addWidget(self.load_selected_btn)
+        btn_layout.addWidget(self.delete_selected_btn)
+        btn_layout.addWidget(self.import_btn)
+        btn_layout.addWidget(self.export_btn)
+        saved_layout.addWidget(self.saved_list)
+        saved_layout.addLayout(btn_layout)
+        saved_box.setLayout(saved_layout)
 
         # Category controls
         cat_box = QGroupBox("Category (weighted)")
@@ -142,6 +178,7 @@ class GradeCalculatorWindow(QMainWindow):
         grade_layout.addWidget(self.grade_label)
 
         main_layout.addWidget(class_box)
+        main_layout.addWidget(saved_box)
         main_layout.addWidget(cat_box)
         main_layout.addWidget(assign_box)
         main_layout.addWidget(thr_box)
@@ -156,6 +193,8 @@ class GradeCalculatorWindow(QMainWindow):
 
         # initialize threshold widgets with defaults (no profile yet)
         self.reset_thresholds()
+        # initialize saved classes list
+        self.refresh_saved_list()
 
     def create_class(self):
         name = self.class_name_edit.text().strip()
@@ -169,6 +208,63 @@ class GradeCalculatorWindow(QMainWindow):
         self.refresh_threshold_widgets()
         self.update_grade()
         QMessageBox.information(self, "Class created", f"Created class '{name}'.")
+
+    def load_profile(self, profile: ClassProfile):
+        """Set the given ClassProfile into the UI and refresh widgets."""
+        self.profile = profile
+        # populate category selector
+        self.cat_selector.clear()
+        for name in self.profile.categories.keys():
+            self.cat_selector.addItem(name)
+        self.refresh_threshold_widgets()
+        self.refresh_assignment_table()
+        self.update_grade()
+        # ensure saved list highlights current
+        try:
+            idx = list_class_names().index(self.profile.name)
+            self.saved_list.setCurrentRow(idx)
+        except Exception:
+            pass
+
+    def load_data(self):
+        """Load classes from disk and let the user pick one to load into the UI."""
+        try:
+            classes = load_class_data()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
+            return
+
+        if not classes:
+            QMessageBox.information(self, "No data", "No saved classes found.")
+            return
+
+        if len(classes) == 1:
+            self.load_profile(classes[0])
+            QMessageBox.information(self, "Loaded", f"Loaded class '{classes[0].name}'.")
+            return
+
+        # Multiple classes: ask user which to load
+        names = [c.name for c in classes]
+        item, ok = QInputDialog.getItem(self, "Select class to load", "Class:", names, 0, False)
+        if ok and item:
+            sel = next((c for c in classes if c.name == item), None)
+            if sel:
+                self.load_profile(sel)
+                QMessageBox.information(self, "Loaded", f"Loaded class '{sel.name}'.")
+        # also refresh saved list
+        self.refresh_saved_list()
+
+    def save_data(self):
+        """Save the current profile to disk (upsert into persistent list)."""
+        if not self.profile:
+            QMessageBox.warning(self, "No class", "Create or load a class first.")
+            return
+        try:
+            upsert_class(self.profile)
+            QMessageBox.information(self, "Saved", "Current class saved to disk.")
+            self.refresh_saved_list()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save data: {e}")
 
     def add_category(self):
         if not self.profile:
@@ -191,6 +287,82 @@ class GradeCalculatorWindow(QMainWindow):
 
     def on_category_changed(self, index):
         self.refresh_assignment_table()
+
+    # Saved classes UI helpers
+    def refresh_saved_list(self):
+        """Reload saved class names into the QListWidget."""
+        self.saved_list.clear()
+        try:
+            names = list_class_names()
+            for n in names:
+                self.saved_list.addItem(n)
+        except Exception:
+            pass
+
+    def load_selected_saved(self):
+        """Load the class profile currently selected in the saved list."""
+        item = self.saved_list.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Select class", "Please select a saved class to load.")
+            return
+        name = item.text()
+        classes = load_class_data()
+        sel = next((c for c in classes if c.name == name), None)
+        if sel:
+            self.load_profile(sel)
+            QMessageBox.information(self, "Loaded", f"Loaded class '{sel.name}'.")
+
+    def delete_selected_saved(self):
+        item = self.saved_list.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Select class", "Please select a saved class to delete.")
+            return
+        name = item.text()
+        ok = QMessageBox.question(self, "Confirm delete", f"Delete saved class '{name}'?", QMessageBox.Yes | QMessageBox.No)
+        if ok == QMessageBox.Yes:
+            if delete_class(name):
+                QMessageBox.information(self, "Deleted", f"Deleted '{name}'.")
+                self.refresh_saved_list()
+            else:
+                QMessageBox.warning(self, "Not found", "Selected class was not found in storage.")
+
+    def import_file(self):
+        """Import classes from an arbitrary JSON file and optionally load one."""
+        path, _ = QFileDialog.getOpenFileName(self, "Import classes from JSON", "", "JSON Files (*.json);;All Files (*)")
+        if not path:
+            return
+        try:
+            classes = import_from_file(path)
+            if not classes:
+                QMessageBox.information(self, "No classes", "No class definitions found in that file.")
+                return
+            # upsert all imported classes into persistent store
+            for c in classes:
+                upsert_class(c)
+            self.refresh_saved_list()
+            QMessageBox.information(self, "Imported", f"Imported {len(classes)} classes.")
+        except Exception as e:
+            QMessageBox.critical(self, "Import failed", str(e))
+
+    def export_selected(self):
+        item = self.saved_list.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Select class", "Please select a saved class to export.")
+            return
+        name = item.text()
+        classes = load_class_data()
+        sel = next((c for c in classes if c.name == name), None)
+        if not sel:
+            QMessageBox.warning(self, "Not found", "Selected class not found in storage.")
+            return
+        path, _ = QFileDialog.getSaveFileName(self, "Export class to JSON", f"{name}.json", "JSON Files (*.json);;All Files (*)")
+        if not path:
+            return
+        try:
+            export_class_to_file(sel, path)
+            QMessageBox.information(self, "Exported", f"Exported '{name}' to {path}.")
+        except Exception as e:
+            QMessageBox.critical(self, "Export failed", str(e))
 
     def add_assignment(self):
         if not self.profile:
