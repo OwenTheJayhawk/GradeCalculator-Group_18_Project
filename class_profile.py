@@ -24,21 +24,98 @@ class ClassProfile:
             class_profile.add_category(Category.from_dict(c_data))
         return class_profile
     
-    def calculate_what_if_grade(self, category_name: str, new_earned: float, new_possible: float) -> float:
+    # --- START NEW/UPDATED LOGIC ---
+
+    def get_letter_grade(self, percentage: float) -> str:
+        """Converts a numerical percentage to a letter grade (Req ID 3)."""
+        if percentage >= 93.0:
+            return "A"
+        elif percentage >= 90.0:
+            return "A-"
+        elif percentage >= 87.0:
+            return "B+"
+        elif percentage >= 83.0:
+            return "B"
+        elif percentage >= 80.0:
+            return "B-"
+        elif percentage >= 77.0:
+            return "C+"
+        elif percentage >= 73.0:
+            return "C"
+        elif percentage >= 70.0:
+            return "C-"
+        elif percentage >= 60.0:
+            return "D"
+        else:
+            return "F"
+            
+    def calculate_score_needed(self, category_name: str, assignment_possible_points: float, target_grade_percent: float) -> float:
+        """
+        Calculates the score (in points) needed on a single remaining assignment 
+        to achieve the target overall class grade (Requirement 10).
+        """
+        if category_name not in self.categories:
+            raise ValueError(f"Category '{category_name}' not found.")
+        if assignment_possible_points <= 0:
+            raise ValueError("Possible points for the remaining assignment must be greater than zero.")
+            
+        target_category = self.categories[category_name]
+        target_category_weight = target_category.weight
         
-        #Calculates the projected grade if a hypothetical score is added 
-        #to a specific category (Requirement 5 from the stack).
+        # 1. Calculate weighted contribution from ALL OTHER categories/assignments
+        completed_contribution = 0.0
+        total_weight_used_excluding_target = 0.0
+
+        for name, category in self.categories.items():
+            if name != category_name:
+                contribution = category.get_weighted_contribution()
+                completed_contribution += contribution
+                if category.assignments:
+                    total_weight_used_excluding_target += category.weight
+        
+        # 2. Determine the score and points for the target category so far
+        target_cat_score = target_category.get_category_score()
+        target_cat_earned_so_far = target_cat_score["earned"]
+        target_cat_possible_so_far = target_cat_score["possible"]
+        
+        # 3. Calculate the total required weighted percentage (Target % / 100)
+        total_weight_used_for_calc = total_weight_used_excluding_target + target_category_weight
+
+        required_contribution = (target_grade_percent / 100.0) * total_weight_used_for_calc
+        
+        needed_contribution_from_target = required_contribution - completed_contribution
+        
+        # 4. Convert the needed contribution back into a raw percentage for the target category:
+        if target_category_weight == 0:
+             return -1.0 
+             
+        needed_category_percentage = (needed_contribution_from_target / target_category_weight) * 100.0
+        
+        # 5. Convert the needed category percentage into points needed on the final assignment
+        target_cat_possible_total = target_cat_possible_so_far + assignment_possible_points
+        
+        points_needed = ( (needed_category_percentage / 100.0) * target_cat_possible_total ) - target_cat_earned_so_far
+        
+        # 6. Final Sanity Check: return -1.0 if impossible, otherwise return needed points (min 0)
+        if points_needed > assignment_possible_points:
+            return -1.0 # Impossible to achieve the target grade
+        
+        return max(0.0, round(points_needed, 2))
+        
+    def calculate_what_if_grade(self, category_name: str, new_earned: float, new_possible: float) -> float:
+        # ... (Existing What-If logic remains unchanged)
         
         if category_name not in self.categories:
             raise ValueError(f"Category '{category_name}' not found.")
+
+        # NOTE: Assignment class must be imported here if this method is called independently
+        from assignment import Assignment 
 
         # --- Setup the temporary hypothetical assignment list ---
         target_category = self.categories[category_name]
         
         # Create a list of assignments including the hypothetical one
         temp_assignments_list = target_category.assignments + [
-           
-            
             Assignment("Hypothetical", new_earned, new_possible)
         ]
         
@@ -73,7 +150,7 @@ class ClassProfile:
         
         return round((total_contribution / total_weight_used) * 100, 2)
 
-    def add_category(self, category: Category):
+    def add_category(self, category: 'Category'):
         #Adds a grading category to the class profile.
         self.categories[category.name] = category
 
