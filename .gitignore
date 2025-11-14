@@ -1,0 +1,25 @@
+Python Byte-compiled and Cache Files
+
+pycache/
+*.pyc
+*.pyd
+*.pyo
+
+Python Virtual Environments
+
+venv/
+env/
+.env
+
+GUI Artifacts (PyQt/other builds)
+
+Assuming a folder might be created for UI compilation
+
+build/
+dist/
+*.spec
+*.ui
+
+Data Persistence (DO NOT PUSH LOCAL USER DATA!)
+
+local_grade_data.json
