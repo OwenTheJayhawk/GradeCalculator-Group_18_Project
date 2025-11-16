@@ -1,114 +1,75 @@
+#import commands
 from __future__ import annotations
-
 from category import Category
 
-
-class ClassProfile:
-    
+class ClassProfile: #dataclass for acadmeic classes
     def __init__(self, name: str):
-        
-        self.name = name
-        self.categories = {} # Dictionary: {category_name: Category_object}
+        self.class_name = name #name of class
+        self.class_categories = {} #Categories in class
+        self.gradeBoundaries = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0} #grade thresholds assigned to class
 
-        
-        # Keys: 'A','B','C','D','F' -> minimum percentage required for that letter
-        self.grade_thresholds = {
-            "A": 90.0,
-            "B": 80.0,
-            "C": 70.0,
-            "D": 60.0,
-            "F": 0.0
-        }
+    def AddCategory(self, category: Category): #Adds category to class
+        self.class_categories[category.cat_name] = category
 
-    def add_category(self, category: Category):
-        
-        self.categories[category.name] = category
-
-    def calculate_current_grade(self) -> float:
-        
-        if not self.categories:
+    def get_cur_grade(self) -> float: #calculate final percent grade for class
+        if not self.class_categories: #return 0 if no categories
             return 0.0
+        Div = 0.0 #Division of grades added
+        weight = 0.0 #track how much weight has been used
+        for cat_name, category in self.class_categories.items(): #iterate through categories
+            if category.cat_assignments:
+                Div += category.findWeightDiv()
+                weight += category.cat_weight
+        if weight == 0: #if weight is zero, omit
+            return 0.0
+        finalPerc = (Div / weight) * 100 #calculate final percentage grade
+        return round(finalPerc, 2) #round grade for simplicity
+    
+    def weightSum(self) -> float: #Check sum of category weights
+        return sum(_.cat_weight for _ in self.class_categories.values()) * 100
+    
+    def CreateThresholds(self, thresholds: dict): #Set percentage thresholds for each letter grade
+        LetterGrades = {"A", "B", "C", "D", "F"} #letter grades
+        if set(thresholds.keys()) != LetterGrades: #Make sure all letter grades are present
+            raise ValueError("Letter grades not present")
+        temp = {x: float(y) for x, y in thresholds.items()} #convert values to float and check validity
+        for x, y in temp.items():
+            if not (0.0 <= y <= 100.0): #Throw error if value not in feasible range
+                raise ValueError("Threshold should be between 0 and 100")
+        if not (temp["A"] > temp["B"] > temp["C"] > temp["D"] >= temp["F"]): #throw error if thresholds overlap with each other
+            raise ValueError("Thresholds must fit A > B > C > D >= F")
+        self.gradeBoundaries = temp
 
-        total_contribution = 0.0
-        total_weight_used = 0.0
-
-        for category_name, category in self.categories.items():
-            
-            if category.assignments:
-                total_contribution += category.get_weighted_contribution()
-                total_weight_used += category.weight
-
-        
-        if total_weight_used == 0:
-            return 0.0 # No assignments or weights were provided
-
-        
-        final_percentage = (total_contribution / total_weight_used) * 100
-        return round(final_percentage, 2)
-
-    def get_total_declared_weight(self) -> float:
-        #Checks the sum of all category weights. 
-        return sum(c.weight for c in self.categories.values()) * 100
-
-    def set_grade_thresholds(self, thresholds: dict):
-        """
-        Replace grade thresholds. Expected keys: 'A','B','C','D','F' with numeric percentages 0-100.
-        Validation ensures sensible ordering (A > B > C > D >= F) and values in range.
-        """
-        required_keys = {"A", "B", "C", "D", "F"}
-        if set(thresholds.keys()) != required_keys:
-            raise ValueError(f"Thresholds must include exactly these keys: {sorted(required_keys)}")
-
-        
-        thr = {k: float(v) for k, v in thresholds.items()}
-        for k, v in thr.items():
-            if not (0.0 <= v <= 100.0):
-                raise ValueError(f"Threshold for '{k}' must be between 0 and 100.")
-
-        
-        if not (thr["A"] > thr["B"] > thr["C"] > thr["D"] >= thr["F"]):
-            raise ValueError("Thresholds must satisfy A > B > C > D >= F (and values within 0-100).")
-
-        self.grade_thresholds = thr
-
-    def get_grade_thresholds(self) -> dict:
-        
-        return dict(self.grade_thresholds)
-
-    def get_letter_grade(self, percentage: float | None = None) -> str:
-        
-        if percentage is None:
-            percentage = self.calculate_current_grade()
-
-        
-        for letter in ["A", "B", "C", "D", "F"]:
-            if percentage >= self.grade_thresholds[letter]:
-                return letter
+    def get_Boundaries(self) -> dict: #return current grade thresholds for loading classes
+        return dict(self.gradeBoundaries)
+    
+    def LetterGrade(self, percentage: float | None = None) -> str: #Calculate letter grade
+        if percentage is None: #unchanging grade
+            percentage = self.get_cur_grade()
+        for _ in ["A", "B", "C", "D", "F"]: #iterate through thresholds to find correct letter grade
+            if percentage >= self.gradeBoundaries[_]:
+                return _
         return "F"
-
-    def to_dict(self) -> dict:
-        
+    
+    def SaveClass(self) -> dict: #Save class data
         return {
-            "name": self.name,
-            "grade_thresholds": dict(self.grade_thresholds),
-            "categories": [c.to_dict() for c in self.categories.values()],
+            "name": self.class_name,
+            "grade_thresholds": dict(self.gradeBoundaries),
+            "categories": [_.SaveCat() for _ in self.class_categories.values()]
         }
-
+    
     @classmethod
-    def from_dict(cls, data: dict) -> "ClassProfile":
-        
-        name = data.get("name", "")
-        cp = cls(name)
-        thr = data.get("grade_thresholds")
-        if isinstance(thr, dict):
+    def LoadClass(cls, data: dict) -> "ClassProfile": #load class data
+        className = data.get("name", "")
+        Class_Profile = cls(className)
+        thresholds = data.get("grade_thresholds")
+        if isinstance(thresholds, dict):
             try:
-                cp.set_grade_thresholds(thr)
+                Class_Profile.CreateThresholds(thresholds)
             except Exception:
-                # If thresholds are malformed, keep defaults. GUI will show defaults.
                 pass
+        for _ in data.get("categories", []):
+            categories = Category.LoadCat(_)
+            Class_Profile.AddCategory(categories)
 
-        for c in data.get("categories", []):
-            cat = Category.from_dict(c)
-            cp.add_category(cat)
-
-        return cp
+        return Class_Profile
