@@ -1,77 +1,61 @@
+#import statements
 import json
 import os
 from typing import List, Optional
 from class_profile import ClassProfile
 
-DATA_FILE = "local_grade_data.json"
+file = "grade_data.json" #name of file to save data to
 
+def save_data(classes: List[ClassProfile], path: Optional[str] = None): #Save Class data
+    target = path or file #location to save to
+    data = [_.SaveClass() for _ in classes] #data to be saved
+    try: #open file to save to
+        with open(target, 'w') as F:
+            json.dump(data, F, indent=4)
+        print(f"Data saved to {target}")
+    except Exception as E: #Error handling
+        print(f"Error saving: {E}")
 
-def save_class_data(classes: List[ClassProfile], path: Optional[str] = None):
-    
-    target = path or DATA_FILE
-    data = [c.to_dict() for c in classes]
-    try:
-        with open(target, 'w') as f:
-            json.dump(data, f, indent=4)
-        print(f"Data successfully saved to {target}")
-    except Exception as e:
-        print(f"Error saving data: {e}")
-
-
-def load_class_data(path: Optional[str] = None) -> List[ClassProfile]:
-    
-    target = path or DATA_FILE
-    if not os.path.exists(target):
-        print(f"No existing data file found at {target}. Starting fresh.")
+def load_data(path: Optional[str] = None) -> List[ClassProfile]: #load data from file
+    target = path or file #file to load from
+    if not os.path.exists(target): #if no file found
+        print(f"no data found at {target}")
         return []
-
-    try:
+    try: #Open file to read data
         with open(target, 'r') as f:
             data = json.load(f)
-            classes = [ClassProfile.from_dict(d) for d in data]
-            print(f"Data successfully loaded from {target}")
+            classes = [ClassProfile.LoadClass(_) for _ in data]
+            print("Data loaded")
             return classes
-    except Exception as e:
-        print(f"Error loading data: {e}")
+    except Exception as E: #If open fails
+        print(f"Error loading: {E}")
         return []
-
-
-
-
-def upsert_class(profile: ClassProfile):
     
-    classes = load_class_data()
-    replaced = False
-    for idx, c in enumerate(classes):
-        if c.name == profile.name:
-            classes[idx] = profile
-            replaced = True
+def ClassOp(profile: ClassProfile): #Update class information
+    classes = load_data() #get classes
+    rep = False #track if data has been updated
+    for x, y in enumerate(classes):#check for duplicate classes
+        if y.class_name == profile.class_name:
+            classes[x] = profile
+            rep = True
             break
-    if not replaced:
-        classes.append(profile)
-    save_class_data(classes)
+    if not rep:
+        classes.append(profile) #add saved class
+    save_data(classes) #Save data
 
-
-def delete_class(name: str) -> bool:
-    
-    classes = load_class_data()
-    new = [c for c in classes if c.name != name]
-    if len(new) == len(classes):
+def deleteClass(name: str) -> bool: #delete a class
+    classes = load_data()
+    add = [_ for _ in classes if _.class_name != name]
+    if len(add) == len(classes):
         return False
-    save_class_data(new)
+    save_data(add)
     return True
 
+def listClasses() -> List[str]: #list all classes
+    return [_.name for _ in load_data()]
 
-def list_class_names() -> List[str]:
-    
-    return [c.name for c in load_class_data()]
+def import_data(path: str) -> List[ClassProfile]:
+    return load_data(path)
 
-
-def import_from_file(path: str) -> List[ClassProfile]:
-    
-    return load_class_data(path)
-
-
-def export_class_to_file(profile: ClassProfile, path: str):
-    
-    save_class_data([profile], path)
+def export_data(profile: ClassProfile, path: str):
+    save_data([profile], path)
