@@ -1,475 +1,534 @@
 import os
 import sys
 
-
-ROOT = os.path.dirname(os.path.dirname(__file__))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
+R = os.path.dirname(os.path.dirname(__file__))
+if R not in sys.path:
+    sys.path.insert(0, R)
 try:
-    from PyQt5.QtWidgets import (
-        QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-        QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget,
-        QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox,
-        QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog
-    )
+    from PyQt5.Widgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLable, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
     from PyQt5.QtCore import Qt
-except Exception as e:
-    
-    print("PyQt5 is required to run the GUI. Install it with: pip install PyQt5")
-    print("Import error:", e)
-    
+except Exception as E:
+    print("PyAt5 needed to run")
+    print("Error:", E)
     sys.exit(1)
-
 from assignment import Assignment
 from category import Category
 from class_profile import ClassProfile
-from data_manger import (
-    load_class_data, save_class_data,
-    upsert_class, delete_class, list_class_names,
-    import_from_file, export_class_to_file,
-)
+from data_manager import(load_data, save_data, ClassOp, deleteClass)
 
-
-class GradeCalculatorWindow(QMainWindow):
-    
-
+class Grade_Calculator(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Grade Calculator - PyQt5")
+        self.setWindowTitle("Grade Calculator")
         self.resize(800, 480)
-
-        self.profile = None  # ClassProfile instance
-
-        self._build_ui()
-
-    def _build_ui(self):
-        central = QWidget()
-        main_layout = QVBoxLayout()
-
-        # Class controls
-        class_box = QGroupBox("Course")
-        class_layout = QHBoxLayout()
+        self.profile = None
+        self.CreateUI()
+    def CreateUI(self):
+        Middle = QWidget()
+        MidLayout = QVBoxLayout()
+###############################Class Box################################
+        classBox = QGroupBox("Course")
+        classLayout = QHBoxLayout()
         self.class_name_edit = QLineEdit()
-        self.class_name_edit.setPlaceholderText("Enter course name")
+        self.class_name_edit.setPlaceholderText("Enter Class Name")
         self.create_class_btn = QPushButton("Create Class")
-        self.create_class_btn.clicked.connect(self.create_class)
-        class_layout.addWidget(QLabel("Class:"))
-        class_layout.addWidget(self.class_name_edit)
-        class_layout.addWidget(self.create_class_btn)
-        # Load / Save controls for persistence
-        self.load_data_btn = QPushButton("Load Data")
+        self.create_class_btn.clicked.connect(self.MakeClass)
+        classLayout.addWidget(QLabel("Class:"))
+        classLayout.addWidget(self.class_name_edit)
+        classLayout.addWidget(self.create_class_btn)
+        self.load_data_btn = QPushButton("Load Class Data")
         self.load_data_btn.clicked.connect(self.load_data)
         self.save_data_btn = QPushButton("Save Current Class")
         self.save_data_btn.clicked.connect(self.save_data)
-        class_layout.addWidget(self.load_data_btn)
-        class_layout.addWidget(self.save_data_btn)
-        class_box.setLayout(class_layout)
+        classLayout.addWidget(self.load_data_btn)
+        classLayout.addWidget(self.save_data_btn)
+        classBox.setLayout(classLayout)
+###########################################################################
 
-        # Saved classes list + controls
-        saved_box = QGroupBox("Saved Classes")
-        saved_layout = QVBoxLayout()
-        self.saved_list = QListWidget()
-        btn_layout = QHBoxLayout()
-        self.refresh_saved_btn = QPushButton("Refresh")
-        self.refresh_saved_btn.clicked.connect(self.refresh_saved_list)
-        self.load_selected_btn = QPushButton("Load Selected")
-        self.load_selected_btn.clicked.connect(self.load_selected_saved)
-        self.delete_selected_btn = QPushButton("Delete Selected")
-        self.delete_selected_btn.clicked.connect(self.delete_selected_saved)
-        self.import_btn = QPushButton("Import JSON...")
-        self.import_btn.clicked.connect(self.import_file)
-        self.export_btn = QPushButton("Export Selected...")
-        self.export_btn.clicked.connect(self.export_selected)
-        btn_layout.addWidget(self.refresh_saved_btn)
-        btn_layout.addWidget(self.load_selected_btn)
-        btn_layout.addWidget(self.delete_selected_btn)
-        btn_layout.addWidget(self.import_btn)
-        btn_layout.addWidget(self.export_btn)
-        saved_layout.addWidget(self.saved_list)
-        saved_layout.addLayout(btn_layout)
-        saved_box.setLayout(saved_layout)
+##############################Saved Classes Box##############################
+        savedClassBox = QGroupBox("Saved Classes")
+        savedClassLayout = QVBoxLayout()
+        self.savedClasses = QListWidget()
+        buttons = QHBoxLayout()
+        self.refreshButton = QPushButton("refresh")
+        self.refreshButton.clicked.connect(self.refreshSavedClasses)
+        self.loadSelectedClassButton = QPushButton("Load Selected Class")
+        self.loadSelectedClassButton.clicked.connect(self.loadSelectedClass)
+        self.deleteSelectedClassButton = QPushButton("Delete Selected Class")
+        self.deleteSelectedClassButton.clicked.connect(self.deleteSelectedClass)
+        self.importButton = QPushButton("Import Class")
+        self.importButton.clicked.connect(self.importClass)
+        self.exportButton = QPushButton("Export Class")
+        self.exportButton.clicked.connect(self.exportClass)
+        buttons.addWidget(self.refreshButton)
+        buttons.addWidget(self.loadSelectedClassButton)
+        buttons.addWidget(self.deleteSelectedClassButton)
+        buttons.addWidget(self.importButton)
+        buttons.addWidget(self.exportButton)
+        savedClassLayout.addWidget(self.savedClasses)
+        savedClassLayout.addLayout(buttons)
+        savedClassBox.setLayout(savedClassLayout)
+##################################################################################
 
-        # Category controls
-        cat_box = QGroupBox("Category (weighted)")
-        cat_form = QFormLayout()
-        self.cat_name_edit = QLineEdit()
-        self.cat_weight_spin = QDoubleSpinBox()
-        self.cat_weight_spin.setRange(0.0, 100.0)
-        self.cat_weight_spin.setSuffix(" %")
-        self.add_cat_btn = QPushButton("Add Category")
-        self.add_cat_btn.clicked.connect(self.add_category)
-        cat_form.addRow("Name:", self.cat_name_edit)
-        cat_form.addRow("Weight:", self.cat_weight_spin)
-        cat_form.addRow(self.add_cat_btn)
-        cat_box.setLayout(cat_form)
+#############################Category Box####################################
+        categoryBox = QGroupBox("weighted Categories")
+        categoryFormat = QFormLayout()
+        self.EditCategoryName = QLineEdit()
+        self.moveCategoryWeight = QDoubleSpinBox()
+        self.moveCategoryWeight.setRange(0.0, 100.0)
+        self.moveCategoryWeight.setSuffix(" %")
+        self.AddCategoryButton = QPushButton("Add Category")
+        self.AddCategoryButton.clicked.connect(self.newCategory)
+        categoryFormat.addRow("Name:", self.EditCategoryName)
+        categoryFormat.addRow("Weight:", self.moveCategoryWeight)
+        categoryFormat.addRow(self.AddCategoryButton)
+        categoryBox.setLayout(categoryFormat)
+################################################################################
 
-        # Category selector and assignments
-        assign_box = QGroupBox("Assignments")
-        assign_layout = QVBoxLayout()
+###########################Assignment Category Selector##########################
+        assignmentContainer = QGroupBox("Assignments")
+        LayoutOfAssignments = QVBoxLayout()
+        select_Buttons = QHBoxLayout()
+        select_Buttons.addWidget(QLabel("Category:"))
+        self.categorySelector = QComboBox()
+        self.categorySelector.currentIndexChanged.connect(self.switchCategory)
+        assignmentContainer.addWidget(self.categorySelector)
+        LayoutOfAssignments.addLayout(select_Buttons)
+#################################################################################
 
-        selector_layout = QHBoxLayout()
-        selector_layout.addWidget(QLabel("Category:"))
-        self.cat_selector = QComboBox()
-        self.cat_selector.currentIndexChanged.connect(self.on_category_changed)
-        selector_layout.addWidget(self.cat_selector)
-        assign_layout.addLayout(selector_layout)
+##########################Assignments Box########################################
+        AssignmentLayout = QFormLayout()
+        self.assignmentName = QLineEdit()
+        self.points_Earned = QDoubleSpinBox()
+        self.points_Earned.setRange(0.0, 1000000.0)
+        self.points_Possible = QDoubleSpinBox()
+        self.points_Possible.setRange(0.0, 1000000.0)
+        self.NewAssignementBtn = QPushButton("Add Assignment")
+        self.NewAssignementBtn.clicked.connect(self.MakeAssignment)
+        AssignmentLayout.addRow("Name:", self.assignmentName)
+        AssignmentLayout.addRow("Points Earned:", self.points_Earned)
+        AssignmentLayout.addRow("Points Possible:", self.points_Possible)
+        AssignmentLayout.addRow(self.NewAssignementBtn)
+        AssignmentLayout.addLayout(AssignmentLayout)
+################################################################################
 
-        # Assignment form
-        aform = QFormLayout()
-        self.a_name = QLineEdit()
-        self.a_earned = QDoubleSpinBox()
-        self.a_earned.setRange(0.0, 1e6)
-        self.a_possible = QDoubleSpinBox()
-        self.a_possible.setRange(0.0, 1e6)
-        self.add_assignment_btn = QPushButton("Add Assignment to Category")
-        self.add_assignment_btn.clicked.connect(self.add_assignment)
-        aform.addRow("Name:", self.a_name)
-        aform.addRow("Points earned:", self.a_earned)
-        aform.addRow("Points possible:", self.a_possible)
-        aform.addRow(self.add_assignment_btn)
+###############################Grade Thresholds Box################################
+        Thresholds = QGroupBox("Grade Thresholds")
+        ThreshFormat = QFormLayout()
+        self.A = QDoubleSpinBox()
+        self.A.setRange(0.0, 100.0)
+        self.A.setSuffix(" %")
+        self.B = QDoubleSpinBox()
+        self.B.setRange(0.0, 100.0)
+        self.B.setSuffix(" %")
+        self.C = QDoubleSpinBox()
+        self.C.setRange(0.0, 100.0)
+        self.C.setSuffix(" %")
+        self.D = QDoubleSpinBox()
+        self.D.setRange(0.0, 100.0)
+        self.D.setSuffix(" %")
+        self.F = QDoubleSpinBox()
+        self.F.setRange(0.0, 100.0)
+        self.F.setSuffix(" %")
+        self.changeThreshB = QPushButton("Apply Thresholds")
+        self.changeThreshB.clicked.connect(self.ThreshMod)
+        self.Thresh_reset = QPushButton("Reset to Default")
+        self.Thresh_reset.clicked.connect(self.ThreshAlph)
+        ThreshFormat.addRow("A:", self.A)
+        ThreshFormat.addRow("B:", self.B)
+        ThreshFormat.addRow("C:", self.C)
+        ThreshFormat.addRow("D:", self.D)
+        ThreshFormat.addRow("F:", self.F)
+        ThreshFormat.addRow(self.changeThreshB)
+        ThreshFormat.addRow(self.Thresh_reset)
+        Thresholds.setLayout(ThreshFormat)
+##################################################################################
 
-        assign_layout.addLayout(aform)
+##################################Hypothetical Grade Box##################################
+        Hypothetical_Box = QGroupBox("Hypothetical Required Score")
+        LayoutForHypothetical = QFormLayout()
+        self.Hcat = QComboBox()
+        self.Hcat.setToolTip("Select category to calculate required score for")
+        self.Hpossible = QDoubleSpinBox()
+        self.Hpossible.setRange(0.0, 1000000.0)
+        self.Hpossible.setValue(100.0)
+        self.HletterGrade = QComboBox()
+        self.HletterGrade.addItems(["A", "B", "C", "D", "F"])
+        self.Hfind = QPushButton("Calculate Required %")
+        self.Hfind.clicked.connect(self.CalcNeedToGet)
+        self.HresLabel = QLabel("")
+        LayoutForHypothetical.addRow("Category:", self.Hcat)
+        LayoutForHypothetical.addRow("New assignment possible points:", self.Hpossible)
+        LayoutForHypothetical.addRow("Target letter:", self.HletterGrade)
+        LayoutForHypothetical.addRow(self.Hfind)
+        LayoutForHypothetical.addRow(self.HresLabel)
+        Hypothetical_Box.setLayout(LayoutForHypothetical)
+#########################################################################################
 
-        # Grade thresholds controls
-        thr_box = QGroupBox("Grade Thresholds")
-        thr_form = QFormLayout()
-        self.thr_A = QDoubleSpinBox()
-        self.thr_A.setRange(0.0, 100.0)
-        self.thr_A.setSuffix(" %")
-        self.thr_B = QDoubleSpinBox()
-        self.thr_B.setRange(0.0, 100.0)
-        self.thr_B.setSuffix(" %")
-        self.thr_C = QDoubleSpinBox()
-        self.thr_C.setRange(0.0, 100.0)
-        self.thr_C.setSuffix(" %")
-        self.thr_D = QDoubleSpinBox()
-        self.thr_D.setRange(0.0, 100.0)
-        self.thr_D.setSuffix(" %")
-        self.thr_F = QDoubleSpinBox()
-        self.thr_F.setRange(0.0, 100.0)
-        self.thr_F.setSuffix(" %")
-        self.apply_thr_btn = QPushButton("Apply Thresholds")
-        self.apply_thr_btn.clicked.connect(self.apply_thresholds)
-        self.reset_thr_btn = QPushButton("Reset to Defaults")
-        self.reset_thr_btn.clicked.connect(self.reset_thresholds)
+################################List of Assignments####################################
+        self.assignments = QTableWidget(0, 3)
+        self.assignments.setHorizontalHeaderLabels(["Name", "Earned", "Possible"])
+        AssignmentLayout.addWidget(self.assignments)
+        LayoutOfAssignments.setLayout(AssignmentLayout)
+##########################################################################################
 
-        thr_form.addRow("A:", self.thr_A)
-        thr_form.addRow("B:", self.thr_B)
-        thr_form.addRow("C:", self.thr_C)
-        thr_form.addRow("D:", self.thr_D)
-        thr_form.addRow("F:", self.thr_F)
-        thr_form.addRow(self.apply_thr_btn)
-        thr_form.addRow(self.reset_thr_btn)
-        thr_box.setLayout(thr_form)
+################################Show Grade################################################
+        gradeShow = QHBoxLayout()
+        self.shownGrade = QLabel("Current Grade: N/A")
+        gradeShow.addStretch()
+        gradeShow.addWidget(self.shownGrade)
+###########################################################################################
 
-        # Assignment list table
-        self.assign_table = QTableWidget(0, 3)
-        self.assign_table.setHorizontalHeaderLabels(["Name", "Earned", "Possible"])
-        assign_layout.addWidget(self.assign_table)
+################################General####################################################
+        MidLayout.addWidget(classBox)
+        MidLayout.addWidget(savedClassBox)
+        MidLayout.addWidget(categoryBox)
+        MidLayout.addWidget(Hypothetical_Box)
+        MidLayout.addWidget(assignmentContainer)
+        MidLayout.addLayout(ThreshFormat)
+        MidLayout.addLayout(gradeShow)
+        Middle.setLayout(MidLayout)
+        UpDownScroll = QScrollArea()
+        UpDownScroll.setWidgetResizable(True)
+        UpDownScroll.setWidget(Middle)
+        self.setCentralWidget(UpDownScroll)
+        self.Thresh_reset()
+        self.refreshSavedClasses()
+############################################################################################
 
-        assign_box.setLayout(assign_layout)
 
-        # Grade display 
-        grade_layout = QHBoxLayout()
-        self.grade_label = QLabel("Current grade: N/A")
-        grade_layout.addStretch()
-        grade_layout.addWidget(self.grade_label)
-
-        main_layout.addWidget(class_box)
-        main_layout.addWidget(saved_box)
-        main_layout.addWidget(cat_box)
-        main_layout.addWidget(assign_box)
-        main_layout.addWidget(thr_box)
-        main_layout.addLayout(grade_layout)
-
-        central.setLayout(main_layout)
-        # Wrap the central widget in a scroll area so a vertical scrollbar appears when needed
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(central)
-        self.setCentralWidget(scroll)
-
-        # initialize threshold widgets with defaults (no profile yet)
-        self.reset_thresholds()
-        # initialize saved classes list
-        self.refresh_saved_list()
-
-    def create_class(self):
-        name = self.class_name_edit.text().strip()
-        if not name:
-            QMessageBox.warning(self, "Input required", "Please enter a class name.")
+    def MakeClass(self):
+        N = self.class_name_edit.text().strip()
+        if not N:
+            QMessageBox.warning(self, "Input Error", "Enter a valid class name")
             return
-        self.profile = ClassProfile(name)
-        self.cat_selector.clear()
-        self.assign_table.setRowCount(0)
-        
-        self.refresh_threshold_widgets()
-        self.update_grade()
-        QMessageBox.information(self, "Class created", f"Created class '{name}'.")
-
-    def load_profile(self, profile: ClassProfile):
-        """Set the given ClassProfile into the UI and refresh widgets."""
-        self.profile = profile
-        
-        self.cat_selector.clear()
-        for name in self.profile.categories.keys():
-            self.cat_selector.addItem(name)
-        self.refresh_threshold_widgets()
-        self.refresh_assignment_table()
-        self.update_grade()
+        self.profile = ClassProfile(N)
+        self.categorySelector.clear()
+        self.assignments.setRowCount(0)
+        self.Thresh_reset()
+        self.updateGradeDisplay()
+        QMessageBox.information(self, "Class Created", f"Created class '{N}'.")
+    
+    def refreshSavedClasses(self):
+        self.savedClasses.clear()
         try:
-            idx = list_class_names().index(self.profile.name)
-            self.saved_list.setCurrentRow(idx)
+            N = listnames()
+            for _ in N:
+                self.savedClasses.addItem(_)
         except Exception:
             pass
+        self.refreshHypotheticalCats()
 
-    def load_data(self):
-        """Load classes from disk and let the user pick one to load into the UI."""
-        try:
-            classes = load_class_data()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
+    def loadSelectedClass(self):
+        i = self.savedClasses.currentItem()
+        if not i:
+            QMessageBox.warning(self, "Select class", "Please select a class to load.")
             return
+        N = i.text()
+        clss = load_data()
+        select = next((_ for _ in clss if _.class_name == N), None)
+        if select:
+            self.getProfile(select)
+            QMessageBox.information(self, "Loaded", f"Loaded class '{select.class_name}'.")
 
-        if not classes:
-            QMessageBox.information(self, "No data", "No saved classes found.")
+    def deleteSelectedClass(self):
+        i = self.savedClasses.currentItem()
+        if not i:
+            QMessageBox.warning(self, "Select class", "Please select a saved class to delete.")
             return
-
-        if len(classes) == 1:
-            self.load_profile(classes[0])
-            QMessageBox.information(self, "Loaded", f"Loaded class '{classes[0].name}'.")
-            return
-
-        # Multiple classes: ask user which to load
-        names = [c.name for c in classes]
-        item, ok = QInputDialog.getItem(self, "Select class to load", "Class:", names, 0, False)
-        if ok and item:
-            sel = next((c for c in classes if c.name == item), None)
-            if sel:
-                self.load_profile(sel)
-                QMessageBox.information(self, "Loaded", f"Loaded class '{sel.name}'.")
-        # also refresh saved list
-        self.refresh_saved_list()
-
-    def save_data(self):
-        """Save the current profile to disk (upsert into persistent list)."""
-        if not self.profile:
-            QMessageBox.warning(self, "No class", "Create or load a class first.")
+        N = i.text()
+        check = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete class '{N}'?", QMessageBox.Yes | QMessageBox.No)
+        if check == QMessageBox.Yes:
+            if deleteClass(N):
+                QMessageBox.information(self, "Deleted", f"'{N}' deleted.")
+                self.refreshSavedClasses()
+            else:
+                QMessageBox.warning(self, "Error", "Selected class could not be found")
+                
+    def importClass(self):
+        P, _ = QFileDialog.getOpenFileName(self, "Import Class Data", "", "JSON Files (*.json);;All Files (*)")
+        if not P:
             return
         try:
-            upsert_class(self.profile)
-            QMessageBox.information(self, "Saved", "Current class saved to disk.")
-            self.refresh_saved_list()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save data: {e}")
-
-    def add_category(self):
-        if not self.profile:
-            QMessageBox.warning(self, "No class", "Create a class first.")
+            clss = load_data(P)
+            if not clss:
+                QMessageBox.information(self, "No classes", "No classes found in the selected file.")
+                return
+            for _ in clss:
+                ClassOp(_)
+            self.refreshSavedClasses()
+            QMessageBox.information(self, "Imported", f"Imported {len(clss)} classes.")
+        except Exception as E:
+            QMessageBox.critical(self, "Error", "Import failed)")
+    
+    def exportClass(self):
+        i = self.savedClasses.currentItem()
+        if not i:
+            QMessageBox.warning(self, "Select class", "Please select a saved class to export.")
             return
-        name = self.cat_name_edit.text().strip()
-        weight = float(self.cat_weight_spin.value())
-        if not name:
+        N = i.text()
+        clss = load_data()
+        select = next((_ for _ in clss if _.class_name == N), None)
+        if not select:
+            QMessageBox.warning(self, "Not Found", "Selected class could not be found")
+            return
+        P, _ = QFileDialog.getSaveFileName(self, "Export Class Data", f"{N}.json", "JSON Files (*.json);;All Files (*)")
+        if not P:
+            return
+        try:
+            save_data([select], P)
+            QMessageBox.information(self, "Exported", f"Exported '{N}'")
+        except Exception as E:
+            QMessageBox.critical(self, "Failed export", str(E))
+
+    def newCategory(self):
+        if not self.profile:
+            QMessageBox.warning(self, "No Class", "Create a class first.")
+            return
+        N = self.EditCategoryName.text().strip()
+        W = float(self.moveCategoryWeight.value())
+        if not N:
             QMessageBox.warning(self, "Input required", "Please enter a category name.")
             return
         try:
-            cat = Category(name, weight)
-            self.profile.add_category(cat)
-            self.cat_selector.addItem(cat.name)
-            self.cat_name_edit.clear()
-            self.cat_weight_spin.setValue(0.0)
-            self.update_grade()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
-
-    def on_category_changed(self, index):
-        self.refresh_assignment_table()
-
-    # Saved classes UI helpers
-    def refresh_saved_list(self):
-        
-        self.saved_list.clear()
-        try:
-            names = list_class_names()
-            for n in names:
-                self.saved_list.addItem(n)
-        except Exception:
-            pass
-
-    def load_selected_saved(self):
-        
-        item = self.saved_list.currentItem()
-        if not item:
-            QMessageBox.warning(self, "Select class", "Please select a saved class to load.")
-            return
-        name = item.text()
-        classes = load_class_data()
-        sel = next((c for c in classes if c.name == name), None)
-        if sel:
-            self.load_profile(sel)
-            QMessageBox.information(self, "Loaded", f"Loaded class '{sel.name}'.")
-
-    def delete_selected_saved(self):
-        item = self.saved_list.currentItem()
-        if not item:
-            QMessageBox.warning(self, "Select class", "Please select a saved class to delete.")
-            return
-        name = item.text()
-        ok = QMessageBox.question(self, "Confirm delete", f"Delete saved class '{name}'?", QMessageBox.Yes | QMessageBox.No)
-        if ok == QMessageBox.Yes:
-            if delete_class(name):
-                QMessageBox.information(self, "Deleted", f"Deleted '{name}'.")
-                self.refresh_saved_list()
-            else:
-                QMessageBox.warning(self, "Not found", "Selected class was not found in storage.")
-
-    def import_file(self):
-        
-        path, _ = QFileDialog.getOpenFileName(self, "Import classes from JSON", "", "JSON Files (*.json);;All Files (*)")
-        if not path:
-            return
-        try:
-            classes = import_from_file(path)
-            if not classes:
-                QMessageBox.information(self, "No classes", "No class definitions found in that file.")
-                return
+            newCategory = Category(N, W)
+            self.profile.AddCategory(newCategory)
+            self.categorySelector.addItem(newCategory.cat_name)
+            self.EditCategoryName.clear()
+            self.moveCategoryWeight.setValue(0.0)
+            self.newGrade()
+        except Exception as E:
+            QMessageBox.critical(self, "Error", str(E))
             
-            for c in classes:
-                upsert_class(c)
-            self.refresh_saved_list()
-            QMessageBox.information(self, "Imported", f"Imported {len(classes)} classes.")
-        except Exception as e:
-            QMessageBox.critical(self, "Import failed", str(e))
 
-    def export_selected(self):
-        item = self.saved_list.currentItem()
-        if not item:
-            QMessageBox.warning(self, "Select class", "Please select a saved class to export.")
+    def switchCategory(self):
+        self.refreshAssignments()
+
+    def MakeAssignment(self):
+        if not self.profile:
+            QMessageBox.warning(self, "No Class", "Create a class first.")
             return
-        name = item.text()
-        classes = load_class_data()
-        sel = next((c for c in classes if c.name == name), None)
-        if not sel:
-            QMessageBox.warning(self, "Not found", "Selected class not found in storage.")
+        tempCatName = self.categorySelector.currentText()
+        if not tempCatName:
+            QMessageBox.warning(self, "No Category", "Add a category first.")
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Export class to JSON", f"{name}.json", "JSON Files (*.json);;All Files (*)")
-        if not path:
+        new_name = self.assignmentName.text().strip()
+        earned = float(self.points_Earned.value())
+        possible = float(self.points_Possible.value())
+        if not new_name:
+            QMessageBox.warning(self, "Input Error", "Please enter an assignment name.")
             return
         try:
-            export_class_to_file(sel, path)
-            QMessageBox.information(self, "Exported", f"Exported '{name}' to {path}.")
-        except Exception as e:
-            QMessageBox.critical(self, "Export failed", str(e))
+            newAssignment = Assignment(new_name, earned, possible)
+            NAcategory = self.profile.class_categories[tempCatName]
+            NAcategory.AddAssignment(newAssignment)
+            self.assignmentName.clear()
+            self.points_Earned.setValue(0.0)
+            self.points_Possible.setValue(0.0)
+            self.refreshAssignments()
+            self.newGrade()
+        except Exception as E:
+            QMessageBox.critical(self, "Error", str(E))
 
-    def add_assignment(self):
+    def ThreshMod(self):
         if not self.profile:
-            QMessageBox.warning(self, "No class", "Create a class first.")
+            QMessageBox.warning(self, "No Class", "Create a class first.")
             return
-        cat_name = self.cat_selector.currentText()
-        if not cat_name:
-            QMessageBox.warning(self, "No category", "Add or select a category first.")
-            return
-        name = self.a_name.text().strip()
-        earned = float(self.a_earned.value())
-        possible = float(self.a_possible.value())
-        if not name:
-            QMessageBox.warning(self, "Input required", "Please enter an assignment name.")
-            return
-        try:
-            assignment = Assignment(name, earned, possible)
-            cat = self.profile.categories[cat_name]
-            cat.add_assignment(assignment)
-            self.a_name.clear()
-            self.a_earned.setValue(0.0)
-            self.a_possible.setValue(0.0)
-            self.refresh_assignment_table()
-            self.update_grade()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
-
-    def refresh_assignment_table(self):
-        self.assign_table.setRowCount(0)
-        cat_name = self.cat_selector.currentText()
-        if not cat_name or not self.profile:
-            return
-        cat = self.profile.categories.get(cat_name)
-        if not cat:
-            return
-        for a in cat.assignments:
-            row = self.assign_table.rowCount()
-            self.assign_table.insertRow(row)
-            self.assign_table.setItem(row, 0, QTableWidgetItem(str(a.name)))
-            self.assign_table.setItem(row, 1, QTableWidgetItem(str(a.points_earned)))
-            self.assign_table.setItem(row, 2, QTableWidgetItem(str(a.points_possible)))
-
-    def update_grade(self):
-        if not self.profile:
-            self.grade_label.setText("Current grade: N/A")
-            return
-        try:
-            g = self.profile.calculate_current_grade()
-            letter = self.profile.get_letter_grade(g)
-            self.grade_label.setText(f"Current grade: {g} % ({letter})")
-        except Exception as e:
-            self.grade_label.setText("Current grade: Error")
-
-    
-    def refresh_threshold_widgets(self):
-        """Load current profile thresholds into the widgets (or defaults if no profile)."""
-        if self.profile:
-            thr = self.profile.get_grade_thresholds()
-        else:
-            # same defaults as ClassProfile
-            thr = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
-        self.thr_A.setValue(thr["A"])
-        self.thr_B.setValue(thr["B"])
-        self.thr_C.setValue(thr["C"])
-        self.thr_D.setValue(thr["D"])
-        self.thr_F.setValue(thr["F"])
-
-    def apply_thresholds(self):
-        if not self.profile:
-            QMessageBox.warning(self, "No class", "Create a class first.")
-            return
-        thr = {
-            "A": float(self.thr_A.value()),
-            "B": float(self.thr_B.value()),
-            "C": float(self.thr_C.value()),
-            "D": float(self.thr_D.value()),
-            "F": float(self.thr_F.value()),
+        thresholds = {
+            "A": float(self.A.value()),
+            "B": float(self.B.value()),
+            "C": float(self.C.value()),
+            "D": float(self.D.value()),
+            "F": float(self.F.value()),
         }
         try:
-            self.profile.set_grade_thresholds(thr)
-            QMessageBox.information(self, "Thresholds updated", "Grade thresholds updated.")
-            self.update_grade()
-        except Exception as e:
-            QMessageBox.critical(self, "Invalid thresholds", str(e))
+            self.profile.CreateThresholds(thresholds)
+            QMessageBox.information(self, "Thresholds Updated", "Grade thresholds updated successfully.")
+            self.newGrade()
+        except Exception as E:
+            QMessageBox.critical(self, "Invalid thresholds", str(E))
 
-    def reset_thresholds(self):
-        
-        defaults = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
-        self.thr_A.setValue(defaults["A"])
-        self.thr_B.setValue(defaults["B"])
-        self.thr_C.setValue(defaults["C"])
-        self.thr_D.setValue(defaults["D"])
-        self.thr_F.setValue(defaults["F"])
+    def ThreshAlph(self):
+        default_values = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
+        self.A.setValue(default_values["A"])
+        self.B.setValue(default_values["B"])
+        self.C.setValue(default_values["C"])
+        self.D.setValue(default_values["D"])
+        self.F.setValue(default_values["F"])
 
+    def CalcNeedToGet(self):
+        if not self.profile:
+            QMessageBox.warning(self, "No Class", "Create a class first.")
+            return
+        tempCatName = self.Hcat.currentText()
+        if not tempCatName:
+            QMessageBox.warning(self, "No Category", "Add a category first.")
+            return
+        try:
+            PossibleValue = float(self.Hpossible.value())
+        except Exception:
+            QMessageBox.warning(self, "Input Error", "Enter valid possible points.")
+            return
+        if PossibleValue <= 0:
+            QMessageBox.warning(self, "Input Error", "Possible points must be greater than 0.")
+            return
+        let = self.HletterGrade.currentText()
+        try:
+            threshold = float(self.profile.grade_thresholds[let])
+        except Exception:
+            QMessageBox.critical(self, "Error", "Selected letter grade threshold not found.")
+            return
+        altScore = 0.0
+        altWeight = 0.0
+        mainCat = self.profile.class_categories.get(tempCatName)
+        if mainCat is None:
+            QMessageBox.critical(self, "Error", "Selected category not found.")
+            return
+        for N, C in self.profile.class_categories.items():
+            if N == tempCatName:
+                altWeight += C.cat_weight
+                continue
+            if C.cat_assignments:
+                altCatScore = C.getCatScore()
+                div = (altCatScore["percentage"] / 100.0) * C.cat_weight
+                altScore += div
+                altWeight += C.cat_weight
+        altCatScore = mainCat.getCatScore()
+        Earned = float(altCatScore["earned"])
+        Possible = float(altCatScore["possible"])
+        endWeight = float(mainCat.cat_weight)
+        if endWeight <= 0:
+            QMessageBox.warning(self, "Weight Error", "Selected category has zero weight.")
+            return
+        num = (threshold / 100.0) * (altWeight + endWeight) - altScore
+        newVal = (num / endWeight) * (Possible + PossibleValue)
+        final = (newVal - Earned) * 100.0 / PossibleValue
+        if final <= 0:
+            sendback = "You already meet (or exceed) this target without the new assignment."
+        elif final > 100:
+            sendback = f"Required score if {final:.2f}%. That's greater than 100% - target is unrealistic."
+        else:
+            sendback = f"You need {final:.2f}% on the new assignment to reach at least {threshold:.1f}% ({let})."
+        self.HresLabel.setText(sendback)
 
-def run_app():
+    def getProfile(self, profile: ClassProfile):
+        self.prof = profile
+        self.categorySelector.clear()
+        for _ in self.prof.class_categories.keys():
+            self.categorySelector.addItem(_)
+        self.ThreshreUP()
+        self.newGrade()
+        try:
+            x = listnames().index(self.prof.class_name)
+            self.savedClasses.setCurrentRow(x)
+        except Exception:
+            pass
+        self.refreshHypotheticalCats()
+
+    def ThreshreUP(self):
+        if self.profile:
+            thresholds = self.profile.get_Boundaries()
+        else:
+            thresholds = {"A": 90.0, "B": 80.0, "C": 70.0, "D": 60.0, "F": 0.0}
+        self.A.setValue(thresholds["A"])
+        self.B.setValue(thresholds["B"])
+        self.C.setValue(thresholds["C"])
+        self.D.setValue(thresholds["D"])
+        self.F.setValue(thresholds["F"])
+
+    def newGrade(self):
+        if not self.profile:
+            self.shownGrade.setText("Current Grade: N/A")
+            return
+        try:
+            Grade = self.profile.calculateOverallGrade()
+            letterGrade = self.profile.getLetterGrade(Grade)
+            self.shownGrade.setText(f"Current Grade: {Grade} % ({letterGrade})")
+        except Exception as E:
+            self.shownGrade.setText("Current Grade: Error")
+
+    def listnames() -> List[str]:
+        return [_.class_name for _ in load_data()]
     
+    def refreshHypotheticalCats(self):
+        self.Hcat.clear()
+        if not self.profile:
+            return
+        for _ in self.profile.class_categories.keys():
+            self.Hcat.addItem(_)
+
+
+    def refreshAssignments(self):
+        self.assignments.setRowCount(0)
+        category = self.categorySelector.currentText()
+        if not category or not self.profile:
+            return
+        cat = self.profile.class_categories.get(category)
+        if not cat:
+            return
+        for _ in cat.cat_assignments:
+            row = self.assignments.rowCount()
+            self.assignments.insertRow(row)
+            self.assignments.setItem(row, 0, QTableWidgetItem(str(_.name)))
+            self.assignments.setItem(row, 1, QTableWidgetItem(str(_.earned_points)))
+            self.assignments.setItem(row, 2, QTableWidgetItem(str(_.possible_points)))
+
+    def refreshClasses(self):
+        self.savedClasses.clear()
+        try:
+            N = listnames()
+            for _ in N:
+                self.savedClasses.addItem(_)
+        except Exception:
+            pass
+        self.refreshHypotheticalCats()
+
+def run():
     try:
-        from PyQt5.QtWidgets import QApplication  
+        from PyQt5.QtWidgets import QApplication
     except Exception:
-        print("PyQt5 is not installed. Install it with: pip install PyQt5")
+        print("PyQt5 is required to run this application.")
         return
+    Application = QApplication(sys.argv)
+    ViewWindow = Grade_Calculator()
+    ViewWindow.show()
+    sys.exit(Application.exec_())
 
-    app = QApplication(sys.argv)
-    w = GradeCalculatorWindow()
-    w.show()
-    sys.exit(app.exec_())
+if __name__ == "__main__":
+    run()
 
+    
+"""
+    def load_data(self):
+        try:
+            clss = load_data()
+        except Exception as E:
+            QMessageBox.critical(self, "Error", f"Error to load data: {E}")
+            return
+        if not clss:
+            QMessageBox.information(self, "No Data", "No saved classes found.")
+            return
+        if len(clss == 1):
+            self.getProfile(clss[0])
+            QMessageBox.information(self, "Class Loaded", f"Loaded class '{clss[0].class_name}'.")
+            return
+        dez = [_.class_name for _ in clss]
+        X, Y = QInputDialog.getItem(self, "Select Class", "Class:", dez, 0, False)
+        if Y and X:
+            select = next((_ for _ in clss if _.class_name == X), None)
+            if select:
+                self.getProfile(select)
+                QMessageBox.information(self, "Loaded", f"Loaded class '{select.class_name}'.")
+        self.refreshSavedClasses()
 
-if __name__ == '__main__':
-    run_app()
-
+    def save_data(self):
+        if not self.profile:
+            QMessageBox.warning(self, "No Class", "Make new class first.")
+            return
+        try:
+            ClassOp(self.profile)
+            QMessageBox.information(self, "Saved", "Current Class saved.")
+            self.refreshSavedClasses()
+        except Exception as E:
+            QMessageBox.critical(self, "Error", "Failed to save class")
+"""
