@@ -1,0 +1,69 @@
+[
+    {
+        "name": "EECS 678",
+        "grade_thresholds": {
+            "A": 90.0,
+            "B": 80.0,
+            "C": 70.0,
+            "D": 60.0,
+            "F": 0.0
+        },
+        "categories": [
+            {
+                "name": "midterm",
+                "weight": 17.5,
+                "assignments": [
+                    {
+                        "name": "midterm 1",
+                        "points_earned": 65.0,
+                        "points_possible": 100.0
+                    },
+                    {
+                        "name": "midterm 2",
+                        "points_earned": 82.0,
+                        "points_possible": 100.0
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "EECS 461",
+        "grade_thresholds": {
+            "A": 90.0,
+            "B": 80.0,
+            "C": 70.0,
+            "D": 60.0,
+            "F": 0.0
+        },
+        "categories": [
+            {
+                "name": "HW",
+                "weight": 10.0,
+                "assignments": [
+                    {
+                        "name": "hw",
+                        "points_earned": 10.0,
+                        "points_possible": 10.0
+                    }
+                ]
+            },
+            {
+                "name": "midterm",
+                "weight": 30.0,
+                "assignments": [
+                    {
+                        "name": "midterm 1",
+                        "points_earned": 59.0,
+                        "points_possible": 100.0
+                    },
+                    {
+                        "name": "midterm 2",
+                        "points_earned": 67.0,
+                        "points_possible": 100.0
+                    }
+                ]
+            }
+        ]
+    }
+]

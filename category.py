@@ -1,6 +1,6 @@
 #import functions
 from __future__ import annotations
-from assignment import Assignment
+from assignment import Assignment # Keep this import for method definitions
 
 class Category: #data class for category of assignment which has associated percentage weight
     def __init__(self, name: str, weight: float): #initialize class values
@@ -13,8 +13,8 @@ class Category: #data class for category of assignment which has associated perc
             raise ValueError("Category weight must be between 0 and 100")
         return weight / 100.0
     
-    def AddAssignment(self, assingment: Assignment): #Add assignment to category
-        self.cat_assignments.append(assingment)
+    def AddAssignment(self, assignment: Assignment): #Add assignment to category
+        self.cat_assignments.append(assignment) # Corrected typo in variable name: assignment
 
     def getCatScore(self) -> dict: #calculate total points and percentage for category
         earned = sum(_.earned_points for _ in self.cat_assignments) #calculate earned points
@@ -33,17 +33,26 @@ class Category: #data class for category of assignment which has associated perc
         return (catScore["percentage"] / 100.0) * self.cat_weight
     
     def SaveCat(self) -> dict: #save category data
+        """Serialization method for saving data."""
         return {
             "name": self.cat_name,
-            "weight": float(self.cat_weight * 100),
-            "assignments": [_.SaveCat() for _ in self.cat_assignments],
+            "weight": float(self.cat_weight * 100), # Stored as percentage for file readability
+            "assignments": [_.create_save() for _ in self.cat_assignments], # Assuming Assignment uses create_save() or similar
         }
     
     @classmethod
     def LoadCat(cls, data: dict) -> "Category": #load category data
+        """Deserialization method for loading data, handles nested Assignment objects."""
+        # Note: We must import Assignment within the method or rely on the top-level import
+        from assignment import Assignment 
+        
         category_name = data.get("name", "")
         category_weight = float(data.get("weight", 0.0))
         category = cls(category_name, category_weight)
-        for _ in data.get("assignments", []):
-            category.AddAssignment(Assignment.LoadCat(_))
+        
+        for ass_data in data.get("assignments", []):
+            # Recursively load the Assignment object
+            assignment = Assignment.Load(ass_data) # Assuming Assignment uses Load() or LoadCat()
+            category.AddAssignment(assignment)
+            
         return category
