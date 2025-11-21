@@ -6,7 +6,7 @@ R = os.path.dirname(os.path.dirname(__file__)) #get parent directory
 if R not in sys.path: #add parent directory to path
     sys.path.insert(0, R)
 try:
-    from PyQt5.Widgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLable, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
+    from PyQt5.QtWidgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
     from PyQt5.QtCore import Qt
 except Exception as E:
     print("PyAt5 needed to run")
@@ -562,4 +562,4 @@ class Grade_Calculator(QMainWindow):
             self.refreshSavedClasses()
         except Exception as E:
             QMessageBox.critical(self, "Error", "Failed to save class")
-"""
+
