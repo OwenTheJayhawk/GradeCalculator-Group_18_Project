@@ -563,9 +563,9 @@ class Grade_Calculator(QMainWindow):
         except Exception as E:
             QMessageBox.critical(self, "Error", "Failed to save class")
 
-    def run_app():
-        # QApplication is already imported at the top of qt_main.py
-        app = QApplication(sys.argv)
-        window = Grade_Calculator()
-        window.show()
-        sys.exit(app.exec_())
+def run_app():
+    # QApplication is already imported at the top of qt_main.py
+    app = QApplication(sys.argv)
+    window = Grade_Calculator()
+    window.show()
+    sys.exit(app.exec_())
