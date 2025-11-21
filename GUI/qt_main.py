@@ -1,13 +1,14 @@
+#import statements
 import os
 import sys
 
-R = os.path.dirname(os.path.dirname(__file__))
-if R not in sys.path:
+R = os.path.dirname(os.path.dirname(__file__)) #get parent directory
+if R not in sys.path: #add parent directory to path
     sys.path.insert(0, R)
-try:
-    from PyQt5.Widgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLable, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
+try: #try to import PyQt5
+    from PyQt5.QtWidgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLable, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
     from PyQt5.QtCore import Qt
-except Exception as E:
+except Exception as E: #Exception handling
     print("PyAt5 needed to run")
     print("Error:", E)
     sys.exit(1)
@@ -16,33 +17,33 @@ from category import Category
 from class_profile import ClassProfile
 from data_manager import(load_data, save_data, ClassOp, deleteClass)
 
-class Grade_Calculator(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Grade Calculator")
-        self.resize(800, 480)
-        self.profile = None
-        self.CreateUI()
-    def CreateUI(self):
-        Middle = QWidget()
-        MidLayout = QVBoxLayout()
+class Grade_Calculator(QMainWindow): #Main window class
+    def __init__(self): #initalize values
+        super().__init__() #call parent constructor
+        self.setWindowTitle("Grade Calculator") #make window title
+        self.resize(800, 480) #set window size
+        self.profile = None #set profile to None
+        self.CreateUI() #Create UI
+    def CreateUI(self): #Create UI elements
+        Middle = QWidget() #main box
+        MidLayout = QVBoxLayout() #main box layout
 ###############################Class Box################################
-        classBox = QGroupBox("Course")
-        classLayout = QHBoxLayout()
-        self.class_name_edit = QLineEdit()
-        self.class_name_edit.setPlaceholderText("Enter Class Name")
-        self.create_class_btn = QPushButton("Create Class")
-        self.create_class_btn.clicked.connect(self.MakeClass)
-        classLayout.addWidget(QLabel("Class:"))
-        classLayout.addWidget(self.class_name_edit)
-        classLayout.addWidget(self.create_class_btn)
-        self.load_data_btn = QPushButton("Load Class Data")
-        self.load_data_btn.clicked.connect(self.load_data)
-        self.save_data_btn = QPushButton("Save Current Class")
+        classBox = QGroupBox("Course") #class box
+        classLayout = QHBoxLayout() #layout 
+        self.class_name_edit = QLineEdit() #input class name
+        self.class_name_edit.setPlaceholderText("Enter Class Name") #placeholder text
+        self.create_class_btn = QPushButton("Create Class") #create class button
+        self.create_class_btn.clicked.connect(self.MakeClass) #create class button action
+        classLayout.addWidget(QLabel("Class:")) #class label
+        classLayout.addWidget(self.class_name_edit) #input for class name
+        classLayout.addWidget(self.create_class_btn) #create class button
+        self.load_data_btn = QPushButton("Load Class Data") #load class button
+        self.load_data_btn.clicked.connect(self.load_data) #action to load class
+        self.save_data_btn = QPushButton("Save Current Class") #save class button
         self.save_data_btn.clicked.connect(self.save_data)
-        classLayout.addWidget(self.load_data_btn)
-        classLayout.addWidget(self.save_data_btn)
-        classBox.setLayout(classLayout)
+        classLayout.addWidget(self.load_data_btn) #place load button in layout
+        classLayout.addWidget(self.save_data_btn) #place save button in layout
+        classBox.setLayout(classLayout) #set layout
 ###########################################################################
 
 ##############################Saved Classes Box##############################
