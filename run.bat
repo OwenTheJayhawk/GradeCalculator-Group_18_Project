@@ -1,1 +1,2 @@
-python app.py
+cd GUI
+python qt_main.py
