@@ -1,15 +1,16 @@
 #import statements
 import os
 import sys
+from typing import List
 
 R = os.path.dirname(os.path.dirname(__file__)) #get parent directory
 if R not in sys.path: #add parent directory to path
     sys.path.insert(0, R)
 try: #try to import PyQt5
-    from PyQt5.QtWidgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLable, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
+    from PyQt5.QtWidgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
     from PyQt5.QtCore import Qt
 except Exception as E: #Exception handling
-    print("PyAt5 needed to run")
+    print("PyQt5 needed to run")
     print("Error:", E)
     sys.exit(1)
 from assignment import Assignment
@@ -93,7 +94,7 @@ class Grade_Calculator(QMainWindow): #Main window class
         select_Buttons.addWidget(QLabel("Category:"))
         self.categorySelector = QComboBox()
         self.categorySelector.currentIndexChanged.connect(self.switchCategory)
-        assignmentContainer.addWidget(self.categorySelector)
+        select_Buttons.addWidget(self.categorySelector)
         LayoutOfAssignments.addLayout(select_Buttons)
 #################################################################################
 
@@ -110,7 +111,6 @@ class Grade_Calculator(QMainWindow): #Main window class
         AssignmentLayout.addRow("Points Earned:", self.points_Earned)
         AssignmentLayout.addRow("Points Possible:", self.points_Possible)
         AssignmentLayout.addRow(self.NewAssignementBtn)
-        AssignmentLayout.addLayout(AssignmentLayout)
 ################################################################################
 
 ###############################Grade Thresholds Box################################
@@ -169,8 +169,9 @@ class Grade_Calculator(QMainWindow): #Main window class
 ################################List of Assignments####################################
         self.assignments = QTableWidget(0, 3)
         self.assignments.setHorizontalHeaderLabels(["Name", "Earned", "Possible"])
-        AssignmentLayout.addWidget(self.assignments)
-        LayoutOfAssignments.setLayout(AssignmentLayout)
+        AssignmentLayout.addRow(self.assignments)
+        LayoutOfAssignments.addLayout(AssignmentLayout)
+        assignmentContainer.setLayout(LayoutOfAssignments)
 ##########################################################################################
 
 ################################Show Grade################################################
@@ -186,14 +187,14 @@ class Grade_Calculator(QMainWindow): #Main window class
         MidLayout.addWidget(categoryBox)
         MidLayout.addWidget(Hypothetical_Box)
         MidLayout.addWidget(assignmentContainer)
-        MidLayout.addLayout(ThreshFormat)
+        MidLayout.addWidget(Thresholds)
         MidLayout.addLayout(gradeShow)
         Middle.setLayout(MidLayout)
         UpDownScroll = QScrollArea()
         UpDownScroll.setWidgetResizable(True)
         UpDownScroll.setWidget(Middle)
         self.setCentralWidget(UpDownScroll)
-        self.Thresh_reset()
+        self.ThreshAlph()
         self.refreshSavedClasses()
 ############################################################################################
 
@@ -206,8 +207,9 @@ class Grade_Calculator(QMainWindow): #Main window class
         self.profile = ClassProfile(N)
         self.categorySelector.clear()
         self.assignments.setRowCount(0)
-        self.Thresh_reset()
-        self.updateGradeDisplay()
+        self.ThreshAlph()
+        self.refreshHypotheticalCats()
+        self.newGrade()
         QMessageBox.information(self, "Class Created", f"Created class '{N}'.")
     
     def refreshSavedClasses(self):
@@ -297,6 +299,7 @@ class Grade_Calculator(QMainWindow): #Main window class
             self.categorySelector.addItem(newCategory.cat_name)
             self.EditCategoryName.clear()
             self.moveCategoryWeight.setValue(0.0)
+            self.refreshHypotheticalCats()
             self.newGrade()
         except Exception as E:
             QMessageBox.critical(self, "Error", str(E))
@@ -375,7 +378,7 @@ class Grade_Calculator(QMainWindow): #Main window class
             return
         let = self.HletterGrade.currentText()
         try:
-            threshold = float(self.profile.grade_thresholds[let])
+            threshold = float(self.profile.gradeBoundaries[let])
         except Exception:
             QMessageBox.critical(self, "Error", "Selected letter grade threshold not found.")
             return
@@ -413,14 +416,14 @@ class Grade_Calculator(QMainWindow): #Main window class
         self.HresLabel.setText(sendback)
 
     def getProfile(self, profile: ClassProfile):
-        self.prof = profile
+        self.profile = profile
         self.categorySelector.clear()
-        for _ in self.prof.class_categories.keys():
+        for _ in self.profile.class_categories.keys():
             self.categorySelector.addItem(_)
         self.ThreshreUP()
         self.newGrade()
         try:
-            x = listnames().index(self.prof.class_name)
+            x = listnames().index(self.profile.class_name)
             self.savedClasses.setCurrentRow(x)
         except Exception:
             pass
@@ -442,22 +445,18 @@ class Grade_Calculator(QMainWindow): #Main window class
             self.shownGrade.setText("Current Grade: N/A")
             return
         try:
-            Grade = self.profile.calculateOverallGrade()
-            letterGrade = self.profile.getLetterGrade(Grade)
+            Grade = self.profile.get_cur_grade()
+            letterGrade = self.profile.LetterGrade(Grade)
             self.shownGrade.setText(f"Current Grade: {Grade} % ({letterGrade})")
         except Exception as E:
             self.shownGrade.setText("Current Grade: Error")
 
-    def listnames() -> List[str]:
-        return [_.class_name for _ in load_data()]
-    
     def refreshHypotheticalCats(self):
         self.Hcat.clear()
         if not self.profile:
             return
         for _ in self.profile.class_categories.keys():
             self.Hcat.addItem(_)
-
 
     def refreshAssignments(self):
         self.assignments.setRowCount(0)
@@ -474,32 +473,6 @@ class Grade_Calculator(QMainWindow): #Main window class
             self.assignments.setItem(row, 1, QTableWidgetItem(str(_.earned_points)))
             self.assignments.setItem(row, 2, QTableWidgetItem(str(_.possible_points)))
 
-    def refreshClasses(self):
-        self.savedClasses.clear()
-        try:
-            N = listnames()
-            for _ in N:
-                self.savedClasses.addItem(_)
-        except Exception:
-            pass
-        self.refreshHypotheticalCats()
-
-def run():
-    try:
-        from PyQt5.QtWidgets import QApplication
-    except Exception:
-        print("PyQt5 is required to run this application.")
-        return
-    Application = QApplication(sys.argv)
-    ViewWindow = Grade_Calculator()
-    ViewWindow.show()
-    sys.exit(Application.exec_())
-
-if __name__ == "__main__":
-    run()
-
-    
-"""
     def load_data(self):
         try:
             clss = load_data()
@@ -509,7 +482,7 @@ if __name__ == "__main__":
         if not clss:
             QMessageBox.information(self, "No Data", "No saved classes found.")
             return
-        if len(clss == 1):
+        if len(clss) == 1:
             self.getProfile(clss[0])
             QMessageBox.information(self, "Class Loaded", f"Loaded class '{clss[0].class_name}'.")
             return
@@ -532,4 +505,20 @@ if __name__ == "__main__":
             self.refreshSavedClasses()
         except Exception as E:
             QMessageBox.critical(self, "Error", "Failed to save class")
-"""
+
+def listnames() -> List[str]:
+    return [_.class_name for _ in load_data()]
+
+def run():
+    try:
+        from PyQt5.QtWidgets import QApplication
+    except Exception:
+        print("PyQt5 is required to run this application.")
+        return
+    Application = QApplication(sys.argv)
+    ViewWindow = Grade_Calculator()
+    ViewWindow.show()
+    sys.exit(Application.exec_())
+
+if __name__ == "__main__":
+    run()
