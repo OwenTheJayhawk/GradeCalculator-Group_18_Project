@@ -5,4 +5,6 @@ A Python/PyQt application that lets students calculate grades based on assignmen
 Download
 
 If you're on Windows, simply download GradeCalculator.exe and run
+Dowload Link: https://drive.google.com/file/d/1pPxCmmotGKJOFxo-b6LduTVmBkOPoOh0/view?usp=sharing
+
 If you're on Linux, download the project folder and make sure python and PyQT5 are installed. Then, run './run.sh' (Note: if you get a permissions error, run 'chmod +x run.sh')
