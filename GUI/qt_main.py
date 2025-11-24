@@ -7,7 +7,7 @@ if R not in sys.path: #add parent directory to path
     sys.path.insert(0, R)
 try:
     from PyQt5.QtWidgets import(QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QTableWidget, QTableWidgetItem, QMessageBox, QGroupBox, QFormLayout, QSpinBox, QDoubleSpinBox, QScrollArea, QInputDialog, QListWidget, QFileDialog)
-    from PyQt5.QtCore import Qt
+    from PyQt5.QtCore import Qt, QSize
 except Exception as E:
     print("PyAt5 needed to run")
     print("Error:", E)
@@ -50,6 +50,9 @@ class Grade_Calculator(QMainWindow):
         savedClassBox = QGroupBox("Saved Classes")
         savedClassLayout = QVBoxLayout()
         self.savedClasses = QListWidget()
+        # FIX 1: Enable double-clicking to load the class
+        self.savedClasses.itemDoubleClicked.connect(self.loadSelectedClass)
+        
         buttons = QHBoxLayout()
         self.refreshButton = QPushButton("Refresh List")
         self.refreshButton.clicked.connect(self.refreshSavedClasses)
@@ -114,9 +117,16 @@ class Grade_Calculator(QMainWindow):
         AssignmentLayout.addRow("Points Earned:", self.points_Earned)
         AssignmentLayout.addRow("Points Possible:", self.points_Possible)
         AssignmentLayout.addRow(self.NewAssignementBtn)
-        # FIX: The original code had AssignmentLayout.addLayout(AssignmentLayout) which caused the AttributeError. 
-        # Since AssignmentLayout is a QFormLayout, it should only contain rows.
-        # The list of assignments needs to be placed into the container below the form fields.
+
+        # New buttons for editing/deleting assignments
+        AssignmentControlLayout = QHBoxLayout()
+        self.EditAssignmentBtn = QPushButton("Edit Selected")
+        self.EditAssignmentBtn.clicked.connect(self.editSelectedAssignment)
+        self.DeleteAssignmentBtn = QPushButton("Delete Selected")
+        self.DeleteAssignmentBtn.clicked.connect(self.deleteAssignment)
+        AssignmentControlLayout.addWidget(self.EditAssignmentBtn)
+        AssignmentControlLayout.addWidget(self.DeleteAssignmentBtn)
+        
 ################################################################################
 
 ###############################Grade Thresholds Box################################
@@ -175,8 +185,20 @@ class Grade_Calculator(QMainWindow):
 ################################List of Assignments####################################
         self.assignments = QTableWidget(0, 3)
         self.assignments.setHorizontalHeaderLabels(["Name", "Earned", "Possible"])
+        # Set column widths
+        self.assignments.setColumnWidth(0, 200)
+        self.assignments.setColumnWidth(1, 100)
+        self.assignments.setColumnWidth(2, 100)
+        
+        # FIX 2A: Set selection behavior to select the entire row
+        self.assignments.setSelectionBehavior(QTableWidget.SelectRows)
+        # FIX 2B: Disable editing directly in the table, forcing use of the edit dialog
+        self.assignments.setEditTriggers(QTableWidget.NoEditTriggers)
+        # FIX 2C: Connect double-click signal to the edit function for better UX
+        self.assignments.itemDoubleClicked.connect(lambda item: self.editSelectedAssignment())
         
         LayoutOfAssignments.addLayout(AssignmentLayout) # Add the assignment input form
+        LayoutOfAssignments.addLayout(AssignmentControlLayout) # Add edit/delete buttons
         LayoutOfAssignments.addWidget(self.assignments) # Add the table widget
         assignmentContainer.setLayout(LayoutOfAssignments)
 ##########################################################################################
@@ -218,6 +240,13 @@ class Grade_Calculator(QMainWindow):
         self.refreshSavedClasses()
 ############################################################################################
 
+    def listnames(self):
+        """Helper function to get list of class names."""
+        try:
+            # Note: This calls the data_manger, assuming listClasses exists or using load_data()
+            return [cls.class_name for cls in load_data()]
+        except Exception:
+            return []
 
     def MakeClass(self):
         N = self.class_name_edit.text().strip()
@@ -250,6 +279,7 @@ class Grade_Calculator(QMainWindow):
 
 
     def loadSelectedClass(self):
+        # This handles both button click and double-click
         i = self.savedClasses.currentItem()
         if not i:
             QMessageBox.warning(self, "Select class", "Please select a class to load.")
@@ -259,7 +289,8 @@ class Grade_Calculator(QMainWindow):
         select = next((_ for _ in clss if _.class_name == N), None)
         if select:
             self.getProfile(select)
-            # QMessageBox.information(self, "Loaded", f"Loaded class '{select.class_name}'.")
+            QMessageBox.information(self, "Loaded", f"Loaded class '{select.class_name}'.")
+
 
     def deleteSelectedClass(self):
         i = self.savedClasses.currentItem()
@@ -380,6 +411,104 @@ class Grade_Calculator(QMainWindow):
             self.newGrade()
         except Exception as E:
             QMessageBox.critical(self, "Error", str(E))
+
+    # --- NEW ASSIGNMENT EDIT/DELETE LOGIC ---
+    
+    def getSelectedAssignmentIndex(self):
+        """Returns the row index of the currently selected item in the assignment table."""
+        # FIX 3: Use current selection model to get the selected rows
+        selected_rows = self.assignments.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.warning(self, "Selection Error", "Please select an assignment from the table first.")
+            return -1
+        # selectedRows returns the index of the first column in the selected row(s)
+        return selected_rows[0].row() 
+
+    def deleteAssignment(self):
+        if not self.profile:
+            QMessageBox.warning(self, "No Class", "Load or create a class first.")
+            return
+        
+        row_index = self.getSelectedAssignmentIndex()
+        if row_index == -1:
+            return
+
+        category_name = self.categorySelector.currentText()
+        if not category_name:
+            QMessageBox.warning(self, "Error", "No category selected.")
+            return
+
+        cat = self.profile.class_categories.get(category_name)
+        if not cat:
+            QMessageBox.critical(self, "Error", f"Category '{category_name}' not found in profile.")
+            return
+
+        # Confirmation dialog
+        assignment_name = self.assignments.item(row_index, 0).text()
+        check = QMessageBox.question(self, "Confirm Delete", f"Are you sure you want to delete assignment '{assignment_name}'?", QMessageBox.Yes | QMessageBox.No)
+        if check != QMessageBox.Yes:
+            return
+        
+        try:
+            # Remove the assignment from the Category object's list
+            cat.removeAssignment(row_index) 
+            
+            # Refresh UI
+            self.refreshAssignments()
+            self.newGrade()
+            QMessageBox.information(self, "Deleted", f"Assignment '{assignment_name}' deleted.")
+        except Exception as E:
+            QMessageBox.critical(self, "Error", f"Failed to delete assignment: {str(E)}")
+
+
+    def editSelectedAssignment(self):
+        if not self.profile:
+            QMessageBox.warning(self, "No Class", "Load or create a class first.")
+            return
+        
+        row_index = self.getSelectedAssignmentIndex()
+        if row_index == -1:
+            return
+
+        category_name = self.categorySelector.currentText()
+        cat = self.profile.class_categories.get(category_name)
+        
+        # Get the existing assignment object for pre-population
+        old_assignment = cat.cat_assignments[row_index]
+        
+        # Use QInputDialog to get new values
+        name, ok_name = QInputDialog.getText(self, "Edit Assignment", "New Name:", QLineEdit.Normal, old_assignment.name)
+        if not ok_name or not name.strip(): return
+        
+        earned_text, ok_earned = QInputDialog.getText(self, "Edit Assignment", "New Points Earned:", QLineEdit.Normal, f"{old_assignment.earned_points:.2f}")
+        if not ok_earned: return
+        
+        possible_text, ok_possible = QInputDialog.getText(self, "Edit Assignment", "New Points Possible:", QLineEdit.Normal, f"{old_assignment.possible_points:.2f}")
+        if not ok_possible: return
+        
+        try:
+            new_earned = float(earned_text)
+            new_possible = float(possible_text)
+
+            if new_possible <= 0:
+                QMessageBox.warning(self, "Input Error", "Points possible must be greater than 0.")
+                return
+
+            # Update the Assignment object directly using the new method in category.py
+            cat.editAssignment(row_index, name.strip(), new_earned, new_possible)
+            
+            # Refresh UI
+            self.refreshAssignments()
+            self.newGrade()
+            QMessageBox.information(self, "Updated", f"Assignment '{name.strip()}' updated successfully.")
+            
+        except ValueError:
+            QMessageBox.critical(self, "Input Error", "Please enter valid numbers for earned and possible points.")
+        except Exception as E:
+            QMessageBox.critical(self, "Error", f"Failed to edit assignment: {str(E)}")
+
+    # --- END NEW ASSIGNMENT EDIT/DELETE LOGIC ---
+
 
     def ThreshMod(self):
         if not self.profile:
@@ -518,14 +647,8 @@ class Grade_Calculator(QMainWindow):
             self.assignments.setItem(row, 2, QTableWidgetItem(f"{_.possible_points:.2f}"))
 
     def refreshClasses(self):
-        self.savedClasses.clear()
-        try:
-            N = self.listnames()
-            for _ in N:
-                self.savedClasses.addItem(_)
-        except Exception:
-            pass
-        self.refreshHypotheticalCats()
+        # This function seems redundant with refreshSavedClasses but keeping it for compatibility
+        self.refreshSavedClasses()
         
     def load_data(self):
         try:

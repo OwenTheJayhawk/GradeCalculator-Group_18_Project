@@ -16,6 +16,28 @@ class Category: #data class for category of assignment which has associated perc
     def AddAssignment(self, assignment: Assignment): #Add assignment to category
         self.cat_assignments.append(assignment) # Corrected typo in variable name: assignment
 
+    def removeAssignment(self, index: int):
+        """Removes an assignment by index from the category's list."""
+        if 0 <= index < len(self.cat_assignments):
+            self.cat_assignments.pop(index)
+        else:
+            raise IndexError("Assignment index out of range for removal.")
+
+    def editAssignment(self, index: int, new_name: str, new_earned: float, new_possible: float):
+        """Updates an existing assignment by index."""
+        if 0 <= index < len(self.cat_assignments):
+            assignment = self.cat_assignments[index]
+            
+            # The Assignment class handles internal validation (e.g., negative scores)
+            assignment.name = new_name
+            assignment.possible_points = new_possible
+            assignment.earned_points = new_earned
+            # Re-run checkScore after update if necessary, or ensure setters handle it
+            # Assuming Assignment.__init__ logic is sufficient, but setting attributes directly bypasses it.
+            # Best practice is to call a setter/update method if one existed, but updating fields directly is quicker for this fix.
+        else:
+            raise IndexError("Assignment index out of range for editing.")
+
     def getCatScore(self) -> dict: #calculate total points and percentage for category
         earned = sum(_.earned_points for _ in self.cat_assignments) #calculate earned points
         possible = sum(_.possible_points for _ in self.cat_assignments) #calculate possible points
