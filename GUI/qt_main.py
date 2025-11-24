@@ -16,7 +16,7 @@ except Exception as E: #Exception handling
 from assignment import Assignment
 from category import Category
 from class_profile import ClassProfile
-from data_manager import(load_data, save_data, ClassOp, deleteClass)
+from data_manger import(load_data, save_data, ClassOp, deleteClass)
 
 class Grade_Calculator(QMainWindow): #Main window class
     def __init__(self): #initalize values
