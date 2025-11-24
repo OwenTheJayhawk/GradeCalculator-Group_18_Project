@@ -2,8 +2,12 @@
 # Script to build the Grade Calculator executable using PyInstaller.
 
 # --- Prerequisites ---
-# If you need to install PyInstaller, use the following command:
-# pip3 install pyinstaller
+# If you need to install PyInstaller, use: pip3 install pyinstaller
+
+# --- Configuration ---
+SPEC_FILE="grade_calculator.spec"
+EXE_NAME="GradeCalculator"
+BUILD_FOLDER="build/${SPEC_FILE%.*}" # e.g., build/grade_calculator
 
 # --- Clean up previous builds ---
 echo "Cleaning up previous build directories..."
@@ -12,30 +16,41 @@ rm -rf dist
 find . -name "__pycache__" -exec rm -rf {} +
 find . -name "*.pyc" -delete
 
-# --- Run PyInstaller using the specification file ---
-# --onefile: Creates a single executable file (recommended for ease of distribution)
-# --name: Overrides the name in the spec file, but using the spec file name is fine.
-
+# --- 1. Run PyInstaller to build the components ---
 echo "Starting PyInstaller build..."
-pyinstaller grade_calculator.spec --onefile
+# We run without --onefile flag here, as it's defined in the spec file
+pyinstaller "$SPEC_FILE"
 
-# --- Post-Build Information ---
-if [ -d "dist" ]; then
-    echo "================================================="
-    echo "✅ Build successful!"
-    echo "The executable is located in the 'dist' folder."
+# --- 2. Check Build Success and Copy Executable ---
+
+if [ -f "$BUILD_FOLDER/$EXE_NAME" ]; then
+    echo "PyInstaller build successful. Copying executable..."
+    mkdir -p dist
     
-    # Check OS to give specific instructions
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        echo "Linux Executable: dist/GradeCalculator"
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "macOS Executable: dist/GradeCalculator"
-    elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-        echo "Windows Executable: dist/GradeCalculator.exe"
+    # Check if running on Windows (for .exe naming)
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+        # Windows executable
+        cp "$BUILD_FOLDER/$EXE_NAME" "dist/${EXE_NAME}.exe"
+        FINAL_EXE="dist/${EXE_NAME}.exe"
     else
-        echo "Executable name depends on the host OS."
+        # macOS/Linux executable
+        cp "$BUILD_FOLDER/$EXE_NAME" "dist/$EXE_NAME"
+        FINAL_EXE="dist/$EXE_NAME"
     fi
+
+    # Ensure the executable has correct permissions (critical for macOS/Linux)
+    chmod +x "$FINAL_EXE"
+
+    # --- 3. Post-Build Information ---
     echo "================================================="
+    echo "✅ Final executable successfully created!"
+    echo "Location: $FINAL_EXE"
+    echo "================================================="
+    
+    # Automatically run the executable for testing (optional)
+    echo "Attempting to run the executable now:"
+    "$FINAL_EXE"
 else
-    echo "❌ Build failed. Check PyInstaller output for errors."
+    echo "❌ Build failed. Executable not found in $BUILD_FOLDER."
+    echo "Please inspect the PyInstaller output above for errors."
 fi

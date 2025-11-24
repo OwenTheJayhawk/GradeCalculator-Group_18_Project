@@ -16,7 +16,6 @@ GUI Artifacts (PyQt/other builds)
 Assuming a folder might be created for UI compilation
 
 build/
-dist/
 *.spec
 *.ui
 
