@@ -1,32 +1,55 @@
-Grade Calculator Application
+# Grade Calculator Application
 
-  A Python/PyQt application that lets students calculate grades based on assignments and assignment categories that have corresponding weights. The application also allows students to calculate the percentage     grade they need to get on an upcoming assignment in order to acheieve a specified letter grade.
-  
+A **Python/PyQt** application that lets students calculate grades based on assignments and assignment categories that have corresponding weights. The application also allows students to calculate the percentage grade needed on an upcoming assignment to achieve a specified letter grade.
 
-Download
+## 📥 Download
 
-  If you're on Windows, simply download GradeCalculator.exe and run
-  Dowload Link: https://drive.google.com/file/d/1pPxCmmotGKJOFxo-b6LduTVmBkOPoOh0/view?usp=sharing
+### **Windows**
+Simply download **GradeCalculator.exe** and run it.
 
-  If you're on Linux, download the project folder and make sure python and PyQT5 are installed. Then, run './run.sh' (Note: if you get a permissions error, run 'chmod +x run.sh')
-  
+Download Link:  
+https://drive.google.com/file/d/1pPxCmmotGKJOFxo-b6LduTVmBkOPoOh0/view?usp=sharing
 
-Features
+### **Linux**
+Download the project folder and ensure **Python** and **PyQt5** are installed. Then run:
 
-  Classes: Add your academic classes that contain class categories, assignments, and letter grade thresholds
+```bash
+./run.sh
+```
 
-  Categories: Have a weight associated with. Add assignments to categories. Category weights cannot exceed 100%
+If you get a permissions error:
 
-  Assignments: Set possible points that can be earned and amount of points earned on the assignment. Must be assigned to a category
+```bash
+chmod +x run.sh
+```
 
-  Grade Thresholds: Percentage grade required to earn a specific letter grade. Can be changed. Thresholds must not overlap.
-  
+## ⭐ Features
 
-Hypothetical Grades
+### **Classes**
+Add your academic classes that contain:
+- Class categories  
+- Assignments  
+- Letter grade thresholds  
 
-  Can create an assignment and calculate the grade that will be necessary to achieve on that assignment to achieve a certain letter grade.
-  
+### **Categories**
+- Each category has a weight.
+- Add assignments into categories.  
+- Category weights must not exceed **100%**.
 
-Save/Load
+### **Assignments**
+- Define total possible points.
+- Enter points earned.
+- Must belong to a category.
 
-  Class data can be saved and loaded later
+### **Grade Thresholds**
+- Percentage required to earn each letter grade.
+- Fully customizable.
+- Thresholds must not overlap.
+
+## 📊 Hypothetical Grades
+
+Create a hypothetical assignment and calculate what score you must earn to achieve a specific letter grade.
+
+## 💾 Save / Load
+
+Class data can be saved and loaded for later use.
