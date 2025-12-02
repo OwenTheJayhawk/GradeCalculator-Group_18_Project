@@ -23,3 +23,5 @@ dist/
 Data Persistence (DO NOT PUSH LOCAL USER DATA!)
 
 local_grade_data.json
+
+.DS_Store
