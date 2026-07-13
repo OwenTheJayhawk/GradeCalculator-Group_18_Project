@@ -3,6 +3,10 @@
 A **Python/PyQt** application that lets students calculate grades based on assignments and assignment categories that have corresponding weights. The application also allows students to calculate the percentage grade needed on an upcoming assignment to achieve a specified letter grade.
 **Video Demonstration** - https://drive.google.com/file/d/1mY3bYTCoowVHiFAJQjOSrIHe6h5KncYj/view?usp=sharing
 
+## Video Demonstration
+
+https://github.com/user-attachments/assets/fb7d6e19-a775-4b18-8008-46baf2da8300
+
 ## 📥 Download
 
 ### **Windows**
